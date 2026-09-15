@@ -1,0 +1,237 @@
+{
+  "fixture": {
+    "gaussians": 2048,
+    "frames": 12,
+    "gop": 4,
+    "active_fraction": 0.4,
+    "sh_bands": 0,
+    "seed": 731
+  },
+  "runs": {
+    "python_before_noise": {
+      "backend": "python",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 422603,
+      "video_bytes": 348319,
+      "means_lo_bytes": 73900,
+      "encode_seconds": 0.3235061000450514
+    },
+    "native_before_noise": {
+      "backend": "native",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 422132,
+      "video_bytes": 347848,
+      "means_lo_bytes": 73900,
+      "encode_seconds": 0.16242419998161495
+    },
+    "python_before_stable": {
+      "inactive_values": "stable",
+      "backend": "python",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 175159,
+      "video_bytes": 100875,
+      "means_lo_bytes": 73900,
+      "encode_seconds": 0.2644978999742307
+    },
+    "python_after": {
+      "inactive_values": "stable",
+      "backend": "python",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 92282,
+      "video_bytes": 54601,
+      "means_lo_bytes": 37297,
+      "encode_seconds": 0.285123800043948
+    },
+    "native_after": {
+      "reuse_inactive": true,
+      "inactive_values": "noise",
+      "backend": "native",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 92118,
+      "video_bytes": 54438,
+      "means_lo_bytes": 37296,
+      "encode_seconds": 0.22154940001200885
+    },
+    "python_no_reuse": {
+      "reuse_inactive": false,
+      "inactive_values": "noise",
+      "backend": "python",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 139568,
+      "video_bytes": 104098,
+      "means_lo_bytes": 35086,
+      "encode_seconds": 0.3586532000335865
+    },
+    "native_no_reuse": {
+      "reuse_inactive": false,
+      "inactive_values": "noise",
+      "backend": "native",
+      "source": "C:\\Users\\opsiclear\\Projects\\gs-encoder\\temp\\real_dymensium_original_30\\plys\\frame_00000200.ply",
+      "gaussians": 2048,
+      "frames": 12,
+      "gop": 4,
+      "total_bytes": 138683,
+      "video_bytes": 103246,
+      "means_lo_bytes": 35053,
+      "encode_seconds": 0.2813586000120267
+    }
+  },
+  "render_comparisons": {
+    "temp\\mask-benchmark\\before\\python.gsav": [
+      {
+        "frame": 0,
+        "mse": 7.991149431063604e-08,
+        "psnr_db": 70.97390748137177,
+        "foreground_psnr_db": 56.598866949454546,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.5002555073806434e-06,
+        "psnr_db": 58.23834770280491,
+        "foreground_psnr_db": 43.92753706935405,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 3.428691570661613e-07,
+        "psnr_db": 64.6487158026396,
+        "foreground_psnr_db": 50.29887075950696,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ],
+    "temp\\mask-benchmark\\before\\native.gsav": [
+      {
+        "frame": 0,
+        "mse": 7.12813204017948e-08,
+        "psnr_db": 71.47024264107233,
+        "foreground_psnr_db": 57.1023749419202,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.5254486243065912e-06,
+        "psnr_db": 58.16602414410217,
+        "foreground_psnr_db": 43.85043108985002,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 3.481440558061877e-07,
+        "psnr_db": 64.58241015546884,
+        "foreground_psnr_db": 50.239398780793195,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ],
+    "temp\\mask-benchmark\\stable-before\\python.gsav": [
+      {
+        "frame": 0,
+        "mse": 7.640263532948666e-08,
+        "psnr_db": 71.16891661197671,
+        "foreground_psnr_db": 56.7984479405319,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.1998292848147685e-06,
+        "psnr_db": 59.20880542233331,
+        "foreground_psnr_db": 44.89951505158875,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 7.948732161366934e-08,
+        "psnr_db": 70.99702136655739,
+        "foreground_psnr_db": 56.66643886299694,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ],
+    "temp\\mask-benchmark\\stable-after\\python.gsav": [
+      {
+        "frame": 0,
+        "mse": 6.309880262733714e-08,
+        "psnr_db": 71.99978881917104,
+        "foreground_psnr_db": 57.62985828720928,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.1711406386893941e-06,
+        "psnr_db": 59.31390948702848,
+        "foreground_psnr_db": 45.00509249024482,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 8.569579534878358e-08,
+        "psnr_db": 70.67040486147029,
+        "foreground_psnr_db": 56.33898637386858,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ],
+    "temp\\mask-benchmark\\native-no-reuse\\native.gsav": [
+      {
+        "frame": 0,
+        "mse": 6.309880262733714e-08,
+        "psnr_db": 71.99978881917104,
+        "foreground_psnr_db": 57.62985828720928,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.1711406386893941e-06,
+        "psnr_db": 59.31390948702848,
+        "foreground_psnr_db": 45.00509249024482,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 8.569456610985071e-08,
+        "psnr_db": 70.67046715805232,
+        "foreground_psnr_db": 56.33904842919857,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ],
+    "temp\\mask-benchmark\\render\\native.gsav": [
+      {
+        "frame": 0,
+        "mse": 6.309880262733714e-08,
+        "psnr_db": 71.99978881917104,
+        "foreground_psnr_db": 57.62985828720928,
+        "reference_nonblack_fraction": 0.036224365234375
+      },
+      {
+        "frame": 5,
+        "mse": 1.1711406386893941e-06,
+        "psnr_db": 59.31390948702848,
+        "foreground_psnr_db": 45.00509249024482,
+        "reference_nonblack_fraction": 0.0369720458984375
+      },
+      {
+        "frame": 11,
+        "mse": 8.569456610985071e-08,
+        "psnr_db": 70.67046715805232,
+        "foreground_psnr_db": 56.33904842919857,
+        "reference_nonblack_fraction": 0.03662109375
+      }
+    ]
+  }
+}

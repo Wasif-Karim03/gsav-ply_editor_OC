@@ -1,0 +1,26 @@
+# Local environments, secrets and generated content
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+node_modules/
+*.log
+data/
+datasets/
+outputs/
+exports/
+export_with_edits/
+*.gsav
+*.ply
+*.zip
+*.pem
+*.key
+*.egg-info/
+build/
+dist/
+.claude/

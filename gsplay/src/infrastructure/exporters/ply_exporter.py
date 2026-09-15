@@ -1,0 +1,211 @@
+"""
+PLY exporter implementation using gsply.
+
+Exports Gaussian Splatting data to PLY format, the standard format
+for 3D Gaussian splatting viewers and tools.
+Uses native gsply GSTensor.save() for reliable export.
+Supports local filesystem and cloud storage via UniversalPath.
+"""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Any
+
+from tqdm import tqdm
+
+from src.domain.entities import GSTensor
+from src.domain.interfaces import ModelInterface
+from src.infrastructure.io.path_io import UniversalPath
+
+
+logger = logging.getLogger(__name__)
+
+
+class PlyExporter:
+    """
+    Export Gaussian data to PLY format using gsply.
+
+    Uses native gsply GSTensor.save() method for reliable export.
+    PLY format stores:
+    - Positions (means)
+    - Scales (log space)
+    - Quaternion rotations
+    - Opacities (logit space)
+    - Spherical Harmonics coefficients (sh0 + shN)
+    """
+
+    def __init__(self, **config: Any):
+        """
+        Initialize PLY exporter.
+
+        Parameters
+        ----------
+        **config : Any
+            Configuration options (currently unused, reserved for future)
+        """
+        self.config = config
+
+    def get_file_extension(self) -> str:
+        """Get file extension for PLY format."""
+        return ".ply"
+
+    def export_frame(
+        self, gaussian_data: GSTensor, output_path: str | Path | UniversalPath, **options: Any
+    ) -> None:
+        """
+        Export single frame of Gaussian data to PLY file.
+
+        Uses native gsply GSTensor.save() method for reliable export.
+        Supports local filesystem and cloud storage paths.
+
+        Parameters
+        ----------
+        gaussian_data : GSTensor
+            Gaussian data to export (gsply.GSTensor)
+        output_path : str | Path | UniversalPath
+            Output PLY file path (local or cloud)
+        **options : Any
+            Export options (currently unused)
+
+        Raises
+        ------
+        ValueError
+            If gaussian_data is empty
+        """
+        # Validate input
+        if len(gaussian_data) == 0:
+            raise ValueError("Cannot export empty Gaussian data")
+
+        # Convert to UniversalPath for cloud storage support
+        output_path = UniversalPath(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Convert to PLY format: normalize scales/opacities and convert RGB to SH
+        # Use inplace=False to avoid modifying original data
+        export_data = gaussian_data.normalize(inplace=False)
+        # normalize() clamps opacity away from zero. Preserve exact invisibility
+        # (including absent GSAV rows) as the standard PLY logit sentinel.
+        invisible = gaussian_data.opacities == 0
+        if invisible.any():
+            export_data.opacities = export_data.opacities.clone()
+            export_data.opacities[invisible] = -float("inf")
+            export_data._base = None
+
+        # Convert sh0 from RGB back to SH format if needed
+        # PLY format expects SH coefficients, not RGB colors
+        if hasattr(export_data, "is_sh0_rgb") and export_data.is_sh0_rgb:
+            export_data = export_data.to_sh(inplace=False)
+
+        # Use native gsply save() method
+        # For remote paths, save to temp file first then upload
+        if output_path.is_remote:
+            import os
+            import tempfile
+
+            with tempfile.NamedTemporaryFile(suffix=".ply", delete=False) as tmp:
+                tmp_path = tmp.name
+            try:
+                export_data.save(tmp_path, compressed=False)
+                with open(tmp_path, "rb") as f:
+                    output_path.write_bytes(f.read())
+            finally:
+                os.unlink(tmp_path)
+        else:
+            export_data.save(str(output_path), compressed=False)
+
+        logger.debug(f"Exported PLY: {output_path} ({len(gaussian_data)} gaussians)")
+
+    def export_sequence(
+        self,
+        model: ModelInterface,
+        output_dir: str | Path | UniversalPath,
+        apply_edits_fn: Any = None,
+        progress_callback: Any = None,
+        **options: Any,
+    ) -> int:
+        """
+        Export all frames from model to PLY files.
+
+        Supports local filesystem and cloud storage paths.
+
+        Parameters
+        ----------
+        model : ModelInterface
+            Model to export from
+        output_dir : str | Path | UniversalPath
+            Output directory for PLY files (local or cloud)
+        apply_edits_fn : callable | None
+            Optional function to apply edits: fn(gaussian_data) -> gaussian_data
+        progress_callback : callable | None
+            Optional progress callback: fn(frame_idx, total_frames) -> None
+        **options : Any
+            Export options (currently unused)
+
+        Returns
+        -------
+        int
+            Number of frames successfully exported
+
+        Raises
+        ------
+        ValueError
+            If model has no frames to export
+        """
+        # Convert to UniversalPath for cloud storage support
+        output_dir = UniversalPath(output_dir)
+
+        total_frames = model.get_total_frames()
+
+        if total_frames == 0:
+            raise ValueError("Model has no frames to export")
+
+        # Create output directory
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f"Exporting {total_frames} frames to PLY: {output_dir}")
+
+        exported_count = 0
+
+        for frame_idx in tqdm(range(total_frames), desc="Exporting frames", unit="frame"):
+            try:
+                # Get frame time
+                normalized_time = model.get_frame_time(frame_idx)
+
+                # Get Gaussian data
+                gaussian_data = model.get_gaussians_at_normalized_time(
+                    normalized_time=normalized_time
+                )
+
+                if gaussian_data is None or len(gaussian_data) == 0:
+                    tqdm.write(f"Frame {frame_idx}: No gaussian data, skipping")
+                    continue
+
+                # Apply edits if provided
+                if apply_edits_fn is not None:
+                    gaussian_data = apply_edits_fn(gaussian_data)
+
+                    # Check if edits removed all gaussians
+                    if gaussian_data is None or len(gaussian_data) == 0:
+                        tqdm.write(f"Frame {frame_idx}: All gaussians filtered out, skipping")
+                        continue
+
+                # Export frame
+                output_path = output_dir / f"frame_{frame_idx:05d}.ply"
+                self.export_frame(gaussian_data, output_path)
+
+                exported_count += 1
+
+                # Progress callback
+                if progress_callback is not None:
+                    progress_callback(frame_idx, total_frames)
+
+            except Exception as e:
+                tqdm.write(f"Frame {frame_idx}: Export failed - {e}")
+                logger.error(f"Frame {frame_idx}: Export failed - {e}", exc_info=True)
+                continue
+
+        logger.info(f"PLY export complete: {exported_count}/{total_frames} frames")
+
+        return exported_count

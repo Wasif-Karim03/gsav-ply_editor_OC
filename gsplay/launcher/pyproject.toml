@@ -1,0 +1,40 @@
+[project]
+name = "gsplay-launcher"
+version = "0.1.0"
+description = "FastAPI launcher for managing GSPlay instances"
+license = { text = "AGPL-3.0" }
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "tyro>=0.8.0",
+    "psutil>=5.9.0",
+    "sse-starlette>=1.6.0",
+    "websockets>=12.0",
+    "httpx>=0.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "httpx>=0.26.0",
+]
+
+[project.scripts]
+gsplay_launcher = "gsplay_launcher.main:cli"
+clear_instances = "gsplay_launcher.cli.cleanup:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gsplay_launcher*"]
+
+[tool.setuptools.package-data]
+gsplay_launcher = [
+    "templates/*.html",
+    "static/**/*",
+]

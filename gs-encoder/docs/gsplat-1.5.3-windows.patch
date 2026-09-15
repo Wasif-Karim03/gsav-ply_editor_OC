@@ -1,0 +1,17 @@
+diff --git a/cuda/csrc/IntersectTile.cu b/cuda/csrc/IntersectTile.cu
+--- a/cuda/csrc/IntersectTile.cu
++++ b/cuda/csrc/IntersectTile.cu
+@@ -6,2 +6,5 @@
+ // for CUB_WRAPPER
++#ifdef small
++#undef small
++#endif
+ #include <c10/cuda/CUDACachingAllocator.h>
+diff --git a/cuda/_backend.py b/cuda/_backend.py
+--- a/cuda/_backend.py
++++ b/cuda/_backend.py
+@@ -176,3 +176,3 @@
+         opt_level = "-O0" if FAST_COMPILE else "-O3"
+-        extra_cflags = [opt_level, "-Wno-attributes"]
++        extra_cflags = (["/Od" if FAST_COMPILE else "/O2"] if os.name == "nt" else [opt_level, "-Wno-attributes"])
+         extra_cuda_cflags = [opt_level]

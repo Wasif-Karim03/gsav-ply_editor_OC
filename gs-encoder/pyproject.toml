@@ -1,0 +1,174 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gscodec"
+version = "0.1.0"
+description = "Encode and decode dynamic 3D Gaussian Splatting sequences to/from video formats."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Aly El Hakie", email = "aly@opsiclear.com" }
+]
+maintainers = [
+    { name = "Aly El Hakie", email = "aly@opsiclear.com" }
+]
+keywords = ["gaussian-splatting", "3d", "point-cloud", "compression", "video", "3dgs", "codec"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "torch",
+    "numpy",
+    "faiss-cpu",
+    "ffmpeg-python",
+    "tyro",
+    "tqdm",
+    "torchpq",
+    "cupy-cuda12x>=13.6.0",
+    "gsply[spz]>=0.4.0",
+    "xllvp9",
+    "flash-kmeans>=0.2.0",
+    "triton-windows>=3.5 ; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "build",
+    "twine",
+    "mypy>=1.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+    "vulture",
+]
+all = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "build",
+    "twine",
+]
+render = [
+    "gsplat>=1.5.3",
+]
+
+[project.scripts]
+compress = "gscodec.cli:compress_main"
+decompress = "gscodec.cli:decompress_main"
+
+[project.urls]
+Homepage = "https://github.com/OpsiClear/gscodec"
+Repository = "https://github.com/OpsiClear/gscodec"
+Issues = "https://github.com/OpsiClear/gscodec/issues"
+Documentation = "https://github.com/OpsiClear/gscodec#readme"
+
+[tool.setuptools]
+packages = [
+    "gscodec",
+    "gscodec.common",
+    "gscodec.encoder",
+    "gscodec.encoder.quantization",
+    "gscodec.encoder.sorting",
+    "gscodec.encoder.utils",
+    "gscodec.decoder",
+    "gscodec.decoder.dequantization",
+    "gscodec.decoder.utils",
+]
+package-dir = {"" = "src"}
+zip-safe = true
+
+[tool.setuptools.package-data]
+gscodec = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+]
+
+[tool.coverage.run]
+source = ["gscodec"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = ["scripts/", "third_party/"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "C4", "SIM", "RET", "PL",
+]
+ignore = [
+    "E501", "PLR0913", "PLR2004", "PLR0912", "PLR0915", "PLR0911", "SIM108", "SIM116", "PLC0415",
+    "N803", "N806", "RET504", "B905",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["PLR2004", "N802", "N806", "B007", "B023"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+extra_checks = true
+
+[[tool.mypy.overrides]]
+module = ["faiss.*", "ffmpeg.*", "tqdm.*", "torchpq.*", "cupy.*", "gsply.*", "torch.*", "xllvp9.*"]
+ignore_missing_imports = true
+
+[tool.uv]
+override-dependencies = [
+    "triton ; sys_platform != 'win32'",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+xllvp9 = { path = "third_party/xllvp9", editable = true }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[dependency-groups]
+dev = [
+    "zstandard>=0.25.0",
+]

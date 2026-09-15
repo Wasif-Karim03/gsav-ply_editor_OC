@@ -1,0 +1,236 @@
+[project]
+name = "gsplay"
+version = "0.1.1"
+description = "A real-time player for dynamic 4D Gaussian Splatting scenes (PLY and GIFStream)."
+authors = [{ name = "", email = "opsiclear@gmail.com" }]
+license = { text = "AGPL-3.0" }
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # Core Framework
+    # NOTE: Install via install.sh/install.ps1 for correct CUDA version
+    # The scripts auto-detect CUDA and install matching PyTorch wheels
+    "torch>=2.5.0",
+    "torchvision>=0.20.0",
+    "numpy>=1.24.0",
+    "packaging>=21.0",
+    # UI & Interaction
+    "viser>=0.2.0",
+    "tyro>=0.8.0",
+    # Gaussian Splatting
+    # gsplat installed separately via install script (needs --no-build-isolation)
+    "gsmod>=0.1.7",
+    # Triton for GPU kernels
+    "triton>=3.0.0; sys_platform != 'win32'",
+    "triton-windows>=3.0.0; sys_platform == 'win32'",
+    # Config & utilities
+    "pyyaml>=6.0",
+    "gsplay-launcher",
+    "scipy>=1.10.0",
+    "tqdm>=4.66.0",
+    "websockets>=15.0.1",
+]
+
+[project.optional-dependencies]
+# Development & Testing
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pre-commit>=4.0.0",
+    "ruff>=0.14.0",
+    "commitizen>=4.0.0",
+]
+
+# Cloud Storage (optional - for loading PLY files from cloud)
+cloud = [
+    "fsspec>=2024.1.0",  # Universal filesystem interface
+]
+s3 = [
+    "fsspec>=2024.1.0",
+    "s3fs>=2024.1.0",  # AWS S3
+]
+gcs = [
+    "fsspec>=2024.1.0",
+    "gcsfs>=2024.1.0",  # Google Cloud Storage
+]
+azure = [
+    "fsspec>=2024.1.0",
+    "adlfs>=2024.1.0",  # Azure Blob Storage
+]
+cloud-all = [
+    "fsspec>=2024.1.0",
+    "s3fs>=2024.1.0",
+    "gcsfs>=2024.1.0",
+    "adlfs>=2024.1.0",
+]
+
+# WebSocket streaming (optional - lightweight low-latency streaming)
+# Recommended for internet streaming: single dependency, ~100-150ms latency
+websocket = [
+    "websockets>=12.0",  # Async WebSocket server (lightweight)
+]
+
+# WebRTC streaming (optional - lowest latency but heavy dependencies)
+# Use only if you need sub-100ms latency
+webrtc = [
+    "aiortc>=1.9.0",  # WebRTC for Python
+    "aiohttp>=3.9.0",  # Async HTTP server for signaling
+    "av>=12.0.0",  # Video frame handling
+    "pillow>=10.0.0",  # Image processing
+]
+
+# Documentation (Sphinx)
+docs = [
+    "sphinx>=7.0.0",
+    "furo>=2024.0.0",
+    "myst-parser>=3.0.0",
+    "sphinx-copybutton>=0.5.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+    "sphinx-autobuild>=2024.0.0",
+]
+
+[project.scripts]
+gsplay = "src.gsplay.core.main:cli"
+
+# Plugin entry points for auto-discovery
+[project.entry-points."gsplay.plugins"]
+load-ply = "src.models.ply.optimized_model:OptimizedPlyModel"
+composite = "src.models.composite.composite_model:CompositeModel"
+
+[project.entry-points."gsplay.sinks"]
+ply = "src.infrastructure.exporters.ply_sink:PlySink"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+gsplay-launcher = { path = "launcher" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".venv",
+    "__pycache__",
+    "**/site-packages/**",
+    "build",
+    "dist",
+    ".git",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+# =============================================================================
+# Bandit security scanning
+# =============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "node_modules"]
+skips = [
+    "B101",  # assert_used (ok in tests)
+    "B104",  # hardcoded_bind_all_interfaces (intentional for dev servers)
+    "B110",  # try_except_pass (used for cleanup code)
+    "B311",  # random (used for jitter, not security)
+    "B404",  # subprocess import (needed for process management)
+    "B602",  # shell=True (used for vcvars64.bat on Windows)
+    "B603",  # subprocess_without_shell (intentional for security)
+    "B607",  # partial_path (nvidia-smi, etc.)
+]
+
+# =============================================================================
+# Codespell configuration
+# =============================================================================
+[tool.codespell]
+skip = "*.lock,*.min.js,*.min.css,node_modules,dist,.venv,__pycache__"
+ignore-words-list = "ot,nd,rouge,coo,datas,fro"
+
+# =============================================================================
+# ty type checker configuration (Astral's fast type checker)
+# https://docs.astral.sh/ty/
+# =============================================================================
+[tool.ty.environment]
+# ty auto-detects Python version from requires-python in [project]
+# ty auto-detects src layout
+
+[tool.ty.rules]
+# Lenient settings for gradual type adoption
+# See https://docs.astral.sh/ty/reference/rules/ for all rules
+# ty is strict by default - ignore most errors initially, tighten over time
+#
+# Import/attribute resolution
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
+possibly-unresolved-reference = "ignore"
+possibly-missing-attribute = "ignore"
+#
+# Argument/assignment errors (common in dynamic Python)
+invalid-argument-type = "ignore"
+invalid-assignment = "ignore"
+missing-argument = "ignore"
+unknown-argument = "ignore"
+too-many-positional-arguments = "ignore"
+#
+# Return type errors
+invalid-return-type = "ignore"
+#
+# Parameter default errors (None defaults for optional params)
+invalid-parameter-default = "ignore"
+#
+# Callable/subscriptable/iterable errors
+non-subscriptable = "ignore"
+call-non-callable = "ignore"
+no-matching-overload = "ignore"
+not-iterable = "ignore"
+#
+# Operator errors (numpy/torch operations)
+unsupported-operator = "ignore"
+#
+# Context manager errors
+invalid-context-manager = "ignore"
+#
+# Type form errors (for gradual migration)
+invalid-type-form = "ignore"
+
+# =============================================================================
+# Commitizen configuration
+# https://commitizen-tools.github.io/commitizen/
+# =============================================================================
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.1"
+version_files = [
+    "pyproject.toml:^version",
+]
+tag_format = "v$version"
+changelog_file = "docs/CHANGELOG.md"
+update_changelog_on_bump = true
+changelog_start_rev = "v0.1.0"

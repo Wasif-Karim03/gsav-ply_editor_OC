@@ -1,0 +1,9 @@
+[submodule "third_party/xllav1"]
+	path = gs-encoder/third_party/xllav1
+	url = https://github.com/Opsiclear-internal/xllav1.git
+[submodule "third_party/xllvp9"]
+	path = gs-encoder/third_party/xllvp9
+	url = https://github.com/Opsiclear-internal/xllvp9.git
+[submodule "third_party/gsplat"]
+	path = gs-encoder/third_party/gsplat
+	url = https://github.com/nerfstudio-project/gsplat.git

@@ -1,0 +1,55 @@
+"""Opacity processing using gsmod's native GPU-accelerated operations.
+
+Uses GSTensorPro.opacity() for GPU and GSDataPro.opacity() for CPU.
+"""
+
+from __future__ import annotations
+
+from gsmod import GSDataPro
+from gsmod.config.values import OpacityValues
+from gsmod.torch import GSTensorPro
+
+from src.domain.entities import GSData, GSTensor
+
+from .protocols import OpacityAdjuster
+
+
+class DefaultOpacityAdjuster(OpacityAdjuster):
+    """Opacity adjuster using gsmod's native GPU-accelerated operations.
+
+    GPU: GSTensorPro.opacity() with PyTorch CUDA operations
+    CPU: GSDataPro.opacity() with format-aware processing
+    """
+
+    def apply_gpu(self, gaussians: GSTensor, alpha: float) -> GSTensor:
+        """Apply opacity scaling using native GSTensorPro.opacity().
+
+        Uses inplace=False to let gsmod handle copying internally.
+        """
+        if alpha == 1.0:
+            return gaussians
+
+        # Wrap GSTensor as GSTensorPro if needed (preserves format state)
+        if not isinstance(gaussians, GSTensorPro):
+            gaussians = GSTensorPro.from_gstensor(gaussians)
+
+        # Native API with inplace=False handles copying internally
+        edited = gaussians.opacity(OpacityValues(scale=alpha), inplace=False)
+        # Native edits may replace fields without updating packed storage.
+        edited._base = None
+        return edited
+
+    def apply_cpu(self, data: GSData, alpha: float) -> GSData:
+        """Apply opacity scaling using native GSDataPro.opacity()."""
+        if alpha == 1.0:
+            return data
+
+        # Ensure we have GSDataPro for native API
+        if not isinstance(data, GSDataPro):
+            data = GSDataPro.from_gsdata(data)
+
+        # Native API with inplace=False handles copying internally
+        edited = data.opacity(OpacityValues(scale=alpha), inplace=False)
+        # Native edits may replace fields without updating packed storage.
+        edited._base = None
+        return edited
