@@ -65,6 +65,9 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
     if operation != "encode":
         raise ValueError("Unknown conversion operation")
     from gscodec.encoder import ChunkConfig, SequenceEncoder, VideoConfig
+    from gscodec.encoder.video_writer import require_native_encoder
+
+    require_native_encoder()
 
     files = sorted(source.glob("*.ply"))
     if not files:

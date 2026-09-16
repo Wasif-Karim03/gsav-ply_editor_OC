@@ -50,7 +50,7 @@ def test_preserve_never_matches_or_sorts_and_keeps_masks(
         if degree:
             np.testing.assert_allclose(decoded.shN[mask], frames[i].shN.numpy()[mask], atol=0.005)
     assert any("original arrangement" in m for m in messages)
-    assert "Encoding VP9 video" in messages
+    assert "Encoding VP9 with native xllvp9" in messages
 
 
 @pytest.mark.parametrize(

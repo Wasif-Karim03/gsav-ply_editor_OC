@@ -71,16 +71,16 @@ SH3 has 15 RGB higher-order coefficients per Gaussian. Degree is preserved;
 GSAV quantization and SH clustering mean a round trip is **not bit-exact**.
 Unstructured identity mode supports changing Gaussian counts after filtering.
 
-The local codec patch lazily loads xllvp9. If that module is absent, FFmpeg's
-libvpx-vp9 encodes lossless luma with the requested GOP, then the existing v3
-container and SH pipeline continue unchanged. Both documented xllvp9 GitHub
-URLs were inaccessible during setup. The fallback is tested for exact luma and
-keyframe placement; its encoding speed and output size may differ.
+GSAV export requires native xllvp9 at commit
+`fc0ad99972e96af08fffd62489dd1fa926323c21`, including its compiled
+`_libvpx_ref` extension. Both the application's and xllvp9's FFmpeg encoding
+fallbacks are disallowed. FFmpeg still decodes video and handles audio.
+See [native build and installation](../../docs/native-xllvp9.md).
 
 ## Tested Windows setup
 
 Python 3.12, NVIDIA RTX 2000 Ada, CUDA 12.8, VS 2022 C++ tools, FFmpeg with
-libvpx-vp9 and ffprobe on PATH. Keep the two repositories beside one another.
+VP9 decoding and ffprobe on PATH. Keep the two repositories beside one another.
 From the patched `gs-encoder` v3 checkout:
 
 ```powershell
@@ -93,7 +93,8 @@ uv pip install pytest==9.1.1 ruff==0.16.7
 
 These pin the directly installed dependencies of the tested local environment;
 they are not a cross-platform lockfile. `--no-deps` deliberately avoids the
-unavailable xllvp9 and unused optional codec backends. Use `uv run --no-sync`
+unused optional codec backends. Install the native xllvp9 wheel separately
+using the linked guide. Use `uv run --no-sync`
 to retain this environment. The default adapter finds the sibling codec's
 `.venv`; alternatively set `GSPLAY_CODEC_PYTHON` to its Python executable.
 CPU codec operation is tested; the GSPlay viewer here still uses CUDA.

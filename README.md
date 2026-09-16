@@ -1,11 +1,12 @@
 # GSAV / PLY Editor - Version 3
 
-Application release **3.0.2** fixes full-sequence fast-path selection, reduces
-repeated SH processing, and improves scene replacement and decoder shutdown.
-See the [3.0.2 verification and measurements](docs/version-3.0.2.md).
-See [release notes and benchmark evidence](docs/version-3.md). The `pre-v3` tag
-and unchanged `main` branch preserve the previous baseline; this release is on
-`version-3`. Tags `v3.0.0`, `v3.0.1` and `v3.0.2` preserve each patch level. The codec format remains GSAV v3.
+Application release **3.0.3** uses compiled native xllvp9 for GSAV exports,
+with no FFmpeg VP9 encoding fallback. See the
+[3.0.3 measurements and verification](docs/version-3.0.3.md) and
+[native installation guide](docs/native-xllvp9.md).
+The `pre-v3` tag and unchanged `main` branch preserve the previous baseline;
+the `version-3` branch retains all earlier version tags. The container format
+is unchanged.
 
 Combined GSPlay editor and gs-encoder **v3**, including the local integration,
 color/export fixes, regression tests, and September 15, 2026 audit.
@@ -37,7 +38,7 @@ Legacy files without stored higher-order SH cannot recover missing coefficients.
 | Directory | Purpose |
 | --- | --- |
 | `gsplay/` | Viewer, editor, direct GSAV source, export bridge, UI and regression tests |
-| `gs-encoder/` | Patched v3 codec, SH sidecar support and FFmpeg VP9 fallback |
+| `gs-encoder/` | Patched v3 codec, SH sidecars and required native xllvp9 encoding |
 | `docs/source-manifest.json` | Upstream commits and SHA-256 hashes of the imported working files |
 | `docs/*-environment.json` | Package/version inventory from the tested environments |
 
@@ -52,15 +53,15 @@ The verified machine used Windows, Python 3.12, an NVIDIA RTX 2000 Ada GPU,
 CUDA 12.8, Visual Studio 2022 C++ build tools, and FFmpeg/ffprobe on PATH.
 This repository is a source baseline, not a bundled standalone executable.
 
-1. Clone normally; do not require recursive submodule initialization for the
-   tested FFmpeg fallback. The upstream private xllvp9/xllav1 URLs may be
-   inaccessible. They are not required by that fallback.
+1. Clone normally, then build/install the pinned private xllvp9 dependency
+   using [the native guide](docs/native-xllvp9.md). Repository access and a
+   compiled extension matching the codec Python are required for GSAV export.
 2. Set up GSPlay using its [installation documentation](gsplay/README.md).
    Its installer manages CUDA/MSVC and gsplat. Review its actions before use.
 3. Set up the separate codec `.venv` using the pinned commands in
    [the integration guide](gsplay/docs/gsav-integration.md#tested-windows-setup).
    Avoid a default codec `uv sync`: upstream optional native dependencies are
-   unavailable in the tested setup. Keep the documented `--no-deps` procedure.
+   not all required by this integration. Keep the documented `--no-deps` procedure.
 4. Consult the environment inventories when reproducing the audited package
    versions. They are records, not portable lockfiles. A fresh installation of
    this combined checkout has not been verified; the existing environments were

@@ -18,9 +18,7 @@ import functools
 import logging
 import math
 import struct
-import subprocess
-import tempfile
-from pathlib import Path
+from types import ModuleType
 from typing import TypedDict
 
 import numpy as np
@@ -182,87 +180,34 @@ def encode_to_ivf(
     if gop_size is None:
         gop_size = len(atlases)
 
-    try:
-        import xllvp9
-    except ModuleNotFoundError as exc:
-        if exc.name != "xllvp9":
-            raise
-        logger.info("xllvp9 unavailable; using FFmpeg lossless libvpx-vp9")
-        ivf_data = _encode_ffmpeg(atlases, fps, gop_size)
-    else:
-        frames = np.stack(atlases)
-        ivf_data = xllvp9.encode(frames, fps=fps, keyframe_interval=gop_size)
-    return _parse_ivf(ivf_data)
-
-
-def _encode_ffmpeg(atlases: list[np.ndarray], fps: int, gop_size: int) -> bytes:
-    """Encode exact luma samples, neutral chroma and fixed keyframe intervals.
-
-    A file input avoids subprocess pipe deadlocks and duplicate sequence buffers.
-    This fallback changes encoding speed/size, not the GSAV container or SH payload.
-    """
+    xllvp9 = require_native_encoder()
     height, width = atlases[0].shape
     if fps <= 0 or gop_size <= 0 or width % 2 or height % 2:
         raise ValueError("VP9 requires positive FPS/GOP and even atlas dimensions")
-    with tempfile.TemporaryDirectory(prefix="gsav-vp9-") as directory:
-        raw = Path(directory) / "frames.yuv"
-        output = Path(directory) / "frames.ivf"
-        chroma = bytes([128]) * (width * height // 2)
-        with raw.open("wb") as stream:
-            for atlas in atlases:
-                if atlas.shape != (height, width) or atlas.dtype != np.uint8:
-                    raise ValueError("Atlas frames must have matching uint8 dimensions")
-                stream.write(atlas.tobytes())
-                stream.write(chroma)
-        result = subprocess.run(
-            [
-                "ffmpeg",
-                "-v",
-                "error",
-                "-nostdin",
-                "-f",
-                "rawvideo",
-                "-pix_fmt",
-                "yuv420p",
-                "-s",
-                f"{width}x{height}",
-                "-r",
-                str(fps),
-                "-i",
-                str(raw),
-                "-c:v",
-                "libvpx-vp9",
-                "-lossless",
-                "1",
-                "-g",
-                str(gop_size),
-                "-keyint_min",
-                str(gop_size),
-                "-auto-alt-ref",
-                "0",
-                "-lag-in-frames",
-                "0",
-                "-color_range",
-                "tv",
-                "-threads",
-                "4",
-                "-row-mt",
-                "1",
-                "-cpu-used",
-                "4",
-                "-f",
-                "ivf",
-                str(output),
-            ],
-            capture_output=True,
-            timeout=3600,
-            check=False,
+    if any(a.shape != (height, width) or a.dtype != np.uint8 for a in atlases):
+        raise ValueError("Atlas frames must have matching uint8 dimensions")
+    logger.info("Encoding VP9 with native xllvp9 (_libvpx_ref)")
+    ivf_data = xllvp9.encode(np.stack(atlases), fps=fps, keyframe_interval=gop_size)
+    return _parse_ivf(ivf_data)
+
+
+def require_native_encoder() -> ModuleType:
+    """Require the compiled encoder; never silently choose either FFmpeg fallback."""
+    try:
+        import xllvp9
+        from xllvp9.native_backend import native_backend_available
+    except ImportError as exc:
+        raise RuntimeError(
+            "Native xllvp9 is required for GSAV export. Install the pinned xllvp9 "
+            "wheel into the codec Python environment; FFmpeg VP9 fallback is disabled."
+        ) from exc
+    if not native_backend_available():
+        raise RuntimeError(
+            "xllvp9 is installed but its native _libvpx_ref module is unavailable. "
+            "Build/install the native wheel for this Python version and architecture. "
+            "FFmpeg VP9 fallback is disabled."
         )
-        if result.returncode:
-            raise RuntimeError(
-                "FFmpeg VP9 encoding failed: " + result.stderr.decode(errors="replace")[-3000:]
-            )
-        return output.read_bytes()
+    return xllvp9
 
 
 def _parse_ivf(ivf_data: bytes) -> tuple[bytes, list[RawFrameEntry]]:

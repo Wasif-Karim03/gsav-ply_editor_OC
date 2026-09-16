@@ -364,7 +364,7 @@ class SequenceEncoder:
 
         # Encode video with GOP size = chunk_size
         logger.info(f"Encoding {len(all_atlases)} frame atlases (GOP={chunk_size})...")
-        self._progress("Encoding VP9 video")
+        self._progress("Encoding VP9 with native xllvp9")
         video_data, raw_frame_entries = encode_to_ivf(
             all_atlases,
             fps=self.video_config.fps,
