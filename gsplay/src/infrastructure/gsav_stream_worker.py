@@ -34,6 +34,8 @@ def serve(source: Path, workspace: Path, output) -> None:
         json.dumps(
             {
                 "frames": len(decoder),
+                "chunk_size": decoder.chunk_size,
+                "chunks": [[c["start_frame"], c["end_frame"] + 1] for c in provider.chunk_index],
                 "fps": decoder.fps,
                 "sh_bands": bands,
                 "audio": str(audio_path) if audio else None,
@@ -72,6 +74,7 @@ def serve(source: Path, workspace: Path, output) -> None:
             name: getattr(frame, name)
             for name in ("means", "scales", "quats", "opacities", "sh0", "shN")
         }
+        arrays["presence"] = np.asarray(frame.masks, dtype=bool).reshape(-1)
         if arrays["shN"] is None:
             arrays["shN"] = np.empty((len(frame), 0, 3), dtype=np.float32)
         buffer = io.BytesIO()

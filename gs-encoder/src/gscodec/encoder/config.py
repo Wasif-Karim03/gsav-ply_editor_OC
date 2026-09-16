@@ -23,8 +23,8 @@ class ChunkConfig:
     size: int = 30
     """Number of frames per chunk."""
 
-    identity_mode: Literal["auto", "stable", "unstructured"] = "auto"
-    """Stable requires consistent source-row identities; unstructured enables matching."""
+    identity_mode: Literal["auto", "stable", "unstructured", "preserve"] = "auto"
+    """Preserve retains supplied rows; stable requires identities; unstructured matches."""
 
     lossy_pruning: bool = False
     """Optionally prune low-opacity/small stable slots, in addition to never-active slots."""

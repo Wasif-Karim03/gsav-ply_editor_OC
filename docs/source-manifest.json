@@ -156,7 +156,7 @@
         "src/gsplay/dispatch/__init__.py": "5ba1ddfa0efaad185fcf3921c8cd26dcb0f76faa1237b1899f3e1742bc33d6ff",
         "src/gsplay/dispatch/dispatcher.py": "c130fd932c21ed34130131a0ae188601650da1416e70688cc43eba5a8d3a6e31",
         "src/gsplay/folder_picker_controls.py": "5901870ddd49226004409a8b6e17c8d5dc7f5a4aa13d559550b7dadac2b71465",
-        "src/gsplay/gsav_controls.py": "800f70611feb2774753bdeec0498d0f86f31ddebd0bb10dfe7f97278db8cd7f5",
+        "src/gsplay/gsav_controls.py": "9339258bbf62438b1b4e05d5b14b92f126501a2b2d2d17594520625a61a9fc4e",
         "src/gsplay/initialization/__init__.py": "8512b69e22ede2aa8296baee3b822a63ea3ada4181d28bdf699c45c5473142da",
         "src/gsplay/initialization/ui_setup.py": "950546058e2f43b465cb2de0e6f687918c5beabc509ffac58849630b9e702ccb",
         "src/gsplay/interaction/events.py": "4c4b92266126b706b2dbb5614ecf3c2e94322305718f7a34c0cef6572e55b243",
@@ -201,10 +201,10 @@
         "src/infrastructure/exporters/ply_exporter.py": "69dde932d7d47ef97701b6926fc675b6e017bd4d1c2b3d3601c588c94692e2c7",
         "src/infrastructure/exporters/ply_sink.py": "4bde2cf248459ce001db8158354e09184d25bfa10f44499aeee73dc4fa030394",
         "src/infrastructure/folder_picker.py": "6031123fb0c5db1c3f62f66a363efa27b3631b856d8c6b3b86deebef26e19917",
-        "src/infrastructure/gsav.py": "c3e71bdf8ab346dd4256f95bb0b0dd1ee457d3fe449ef46a3613d993cd7142be",
+        "src/infrastructure/gsav.py": "815251bd1b00075da16857d61e6f501c80000cf80e49af851c8c6e8e37a61a8e",
         "src/infrastructure/gsav_stream.py": "21c733d05411a7cc96aca5988ee4e38ec66b37e64c84f5c991717d9a7f2d5529",
-        "src/infrastructure/gsav_stream_worker.py": "ac9a9b95605246df217288296d9ce0cb0ecf5cc7c8999ac8cd96ce19ce9b29da",
-        "src/infrastructure/gsav_worker.py": "2cf75cbaba47dae98b9a305ea4e3f4d058cda3095e5bc5c7215de3e1d627e92a",
+        "src/infrastructure/gsav_stream_worker.py": "40e35736053a2656428cab0145fee63b8b8bdb0691cfb9d61c622777d7a0f938",
+        "src/infrastructure/gsav_worker.py": "5f6bb062ae6ff6089441287a6185221f07e96846b300ff8fdff52c54fbd62a94",
         "src/infrastructure/health/__init__.py": "6efea337ba52a06894e06ac9bed480cba0d8d34af729786cad469adb0ab80ecb",
         "src/infrastructure/health/monitor.py": "56100b523d9afbf104b2fb04d4eb87db309d0c82d0ba4480911e1e7672e38195",
         "src/infrastructure/io/__init__.py": "a80d528401830256669f05db4fd29161a31a8b8dd3971d6b8e2ef68dc5094f2f",
@@ -234,7 +234,7 @@
         "src/models/__init__.py": "bb48b7b2c44f085247974133e144f9c9b155fd317c38c42105dbd316c3bed1d5",
         "src/models/composite/__init__.py": "443db2ce381260baeaf3036aaedc2b8608b4601f52a4834d5f23870e0660f545",
         "src/models/composite/composite_model.py": "d64c6af3238dde8b828847eb0551eb15713e5d1c52f680681b85cd5e649313c9",
-        "src/models/gsav.py": "7ab1fb20eedbb954832ca86c9d1c99d3bb2c40a2a152f22d73d54a82b1a667ec",
+        "src/models/gsav.py": "bc7c6df19065931ec6911144e659f8fb4bad46c6bbafc019b439617c32dedcb5",
         "src/models/ply/__init__.py": "42337e4a16cbc9de3dc4db13063b47c547940758c6818168140875d2c509420a",
         "src/models/ply/interpolated_model.py": "cbd7b004103dd92955436eeecc245e02b12129624088b236029cd17cc4255e8c",
         "src/models/ply/optimized_model.py": "bd57f277c4a8ee0cd5ff75bfd9c8eaed1c79e7846edebc10b2f8a2ab6a223f59",
@@ -271,7 +271,10 @@
         "tests/test_pipeline_audit.py": "dd0f3de59473ceeb51cf3c72c0f486ce725db231991a60854a5e99162ff982af",
         "tests/test_scene_loading.py": "a127bf0a03725b54d38ef84df4a8bc3c0119dee517fd2885a29c268837185828",
         "tests/test_viewer_container.py": "9c252c93c045a5f5fa793b18a5a14655977c1d3e62d519ed66bfe2f760886832",
-        "uv.lock": "f8a11591142f85efc43084242095414088b4e3ed57730bbe73033b9e8e1548bf"
+        "uv.lock": "f8a11591142f85efc43084242095414088b4e3ed57730bbe73033b9e8e1548bf",
+        "scripts/benchmark_gsav_export.py": "b382cc3013803cd22062b530d7c7e6adf07df3200b2231f027a8f892a160f1cb",
+        "src/gsplay/gsav_export_layout.py": "91f5307aed3c02844313799f96074fbb4b0de453b4ed8930c7571249bb250219",
+        "tests/test_fast_export.py": "46ab5c6d5edd3d67b1eb6b3dcae468d66962126b1533b503e130a537644731d2"
       }
     },
     "gs-encoder": {
@@ -348,14 +351,14 @@
         "src/gscodec/encoder/__init__.py": "960e3e3de61363f22793b912ba214e55ee6aaf914473d22985b27538d873e4b3",
         "src/gscodec/encoder/audio.py": "57dcae557a07f06f8c5e9c0c8295442f01f25d97d8958a6579270402a1195eb7",
         "src/gscodec/encoder/chunk_encoder.py": "c953f625c8d25e7856f4475fcc220b05ce6d8219a6d16ed4bcd39636df367cdb",
-        "src/gscodec/encoder/config.py": "023f588b6870d3e296aab62d54945613d457a48cd7a4f1997ed478949ecdcc8b",
+        "src/gscodec/encoder/config.py": "99a74c29ad65c2a596b4b4d1941e5cf1205d3a0d7cd98831b912e146f1db0516",
         "src/gscodec/encoder/gsflow_metadata.py": "fbac6a28b1027245c883040725d1459ace2cc8dc428404fa05493af0fd803bd3",
         "src/gscodec/encoder/masks.py": "6619bc553b83c95da8e7cc0a6e4138e8dda345648962397c2109fb2860a6e5d4",
         "src/gscodec/encoder/parallel_chunks.py": "cfc39d4767d85aae4470ab422d29e062b4ce1d1c8b176c7a6fed5e26b48f339c",
         "src/gscodec/encoder/post_snap_finetune.py": "a5bd2020f2e5869dc91ad46f41e7794911fef21fd08af1c12946f24b27b1e77c",
         "src/gscodec/encoder/quantization/__init__.py": "a1a56729267a5ef689e1fcf2363019ffa352954de96f5aa77ebccc88ad68cd13",
         "src/gscodec/encoder/quantization/strategies.py": "d5d83bd9f70c9791268b886c393391a63e22d88df13bc8533206a43de31848d4",
-        "src/gscodec/encoder/sequence_encoder.py": "763511055e4f94c8b298f1688f7b763e76883bb3821ebb716426f89d88b02c14",
+        "src/gscodec/encoder/sequence_encoder.py": "fb9e2a65abedca771bbec428fa71a10b9e24c668ae14dc630184a8fc73626762",
         "src/gscodec/encoder/sh_compress.py": "a7eb9e851b60774118e9de39d913dfb9022103b1162d762deaf12c565a569feb",
         "src/gscodec/encoder/sorting/__init__.py": "b2ddfd113806ba88424ac88ac280cf1d8b31430c8291c20228684540c5953672",
         "src/gscodec/encoder/sorting/base.py": "5a9064355112f9b0b83f1ca5051e805658c492b7fb46f93ad96d73bbc023051f",
@@ -380,7 +383,8 @@
         "tests/test_sh_compress.py": "a774dd9b88f841a64cb557b159a8e2cb7419582971f8e2f90b0bcbc998d814bc",
         "tests/test_static_track.py": "4b42b56de9be641449dee761ecd137c48decb064cf7a89bacfeae7829bb61b98",
         "tests/test_temporal_matcher.py": "88da3a61d6b7f09664b2490212eaa8fba52bab1449c4e055dbb8e6b37c77b16a",
-        "tests/test_v3.py": "79f9a9b558aef12d5e47a0a3678aeb3f174371fff575b9121798b78f039e8177"
+        "tests/test_v3.py": "79f9a9b558aef12d5e47a0a3678aeb3f174371fff575b9121798b78f039e8177",
+        "tests/test_preserve_layout.py": "ce907ceb08d9a2a2e781576b9aa0bd9d32a3e511213ed9fbdb5bcce26855dbf1"
       }
     }
   },
@@ -401,5 +405,7 @@
   "excluded_local_settings": [
     "gsplay/.claude/settings.local.json",
     "gs-encoder/.claude/settings.local.json"
-  ]
+  ],
+  "release": "3.0.0",
+  "baseline_commit": "58855adc3a83fec90ba78dcc3f777d2787f7fc65"
 }

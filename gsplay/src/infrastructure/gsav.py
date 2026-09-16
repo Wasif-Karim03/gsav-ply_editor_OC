@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -38,11 +39,14 @@ def validate_gsav(path: Path) -> None:
 
 
 def _run(operation: str, source: Path, destination: Path, **options) -> dict:
+    progress = options.pop("progress", None)
     executable = codec_python()
     worker = Path(__file__).with_name("gsav_worker.py")
     # File-backed logs prevent large codec progress output consuming viewer memory.
     with tempfile.TemporaryDirectory(prefix="gsav-job-") as directory:
         result_path = Path(directory) / "result.json"
+        progress_path = Path(directory) / "progress.json"
+        options["progress_path"] = str(progress_path)
         with (Path(directory) / "codec.log").open("w+b") as log:
             command = [
                 str(executable),
@@ -53,19 +57,37 @@ def _run(operation: str, source: Path, destination: Path, **options) -> dict:
                 str(result_path),
                 json.dumps(options),
             ]
-            try:
-                result = subprocess.run(
-                    command,
-                    stdout=log,
-                    stderr=log,
-                    timeout=3600,
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
-                )
-            except subprocess.TimeoutExpired as exc:
-                raise GsavError(
-                    "GSAV conversion exceeded the one-hour limit; use a shorter sequence."
-                ) from exc
-            if result.returncode:
+            started = time.monotonic()
+            last_message = None
+            last_reported = 0.0
+            with subprocess.Popen(
+                command,
+                stdout=log,
+                stderr=log,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+            ) as process:
+                while process.poll() is None:
+                    if time.monotonic() - started > 3600:
+                        process.kill()
+                        process.wait()
+                        raise GsavError(
+                            "GSAV conversion exceeded the one-hour limit; use a shorter sequence."
+                        )
+                    if progress is not None:
+                        try:
+                            message = json.loads(progress_path.read_text(encoding="utf-8"))[
+                                "message"
+                            ]
+                        except (OSError, ValueError, KeyError):
+                            message = None
+                        now = time.monotonic()
+                        if message and (message != last_message or now - last_reported >= 5):
+                            progress(f"{message} (encoder elapsed {int(now - started)}s)")
+                            last_message = message
+                            last_reported = now
+                    time.sleep(0.25)
+                returncode = process.returncode
+            if returncode:
                 log.seek(0, 2)
                 log.seek(max(0, log.tell() - 4000))
                 raise GsavError("GSAV conversion failed: " + log.read().decode(errors="replace"))
@@ -80,7 +102,14 @@ def decode_gsav(source: Path, destination: Path) -> dict:
 
 
 def encode_gsav(
-    source: Path, destination: Path, fps: int = 30, device: str = "cpu", audio: str | None = None
+    source: Path,
+    destination: Path,
+    fps: int = 30,
+    device: str = "cpu",
+    audio: str | None = None,
+    *,
+    preserve_layout: bool = False,
+    progress=None,
 ) -> dict:
     if not 1 <= fps <= 240:
         raise GsavError("GSAV FPS must be between 1 and 240.")
@@ -92,7 +121,16 @@ def encode_gsav(
     # Encode and validate before publishing; never replace the user's original.
     with tempfile.TemporaryDirectory(prefix=".gsav-export-", dir=destination.parent) as directory:
         pending = Path(directory) / "scene.gsav"
-        result = _run("encode", source, pending, fps=fps, device=device, audio=audio)
+        result = _run(
+            "encode",
+            source,
+            pending,
+            fps=fps,
+            device=device,
+            audio=audio,
+            preserve_layout=preserve_layout,
+            progress=progress,
+        )
         validate_gsav(pending)
         # Exclusive publication also catches a destination created during encoding.
         with destination.open("xb") as output:

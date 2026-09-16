@@ -70,6 +70,7 @@ class GsavModel:
         arrays = self._raw(index)
         self._last_loaded_filename = self.path.name
         self._last_loaded_frame_index = index
+        arrays.pop("presence", None)
         raw = GSData(**arrays)
         data = raw.denormalize(inplace=True)
         data.scales = np.clip(data.scales, GC.Numerical.MIN_SCALE, GC.Numerical.MAX_SCALE)

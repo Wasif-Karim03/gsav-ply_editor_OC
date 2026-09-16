@@ -1,0 +1,238 @@
+{
+  "full_run": {
+    "seconds": 347.29699999999866,
+    "bytes": 47253245,
+    "result": {
+      "frames": 180,
+      "fps": 30,
+      "sh_bands": 3
+    },
+    "events": [
+      {
+        "seconds": 2.812,
+        "stage": "Preparing edited frames: 1/180"
+      },
+      {
+        "seconds": 4.297,
+        "stage": "Preparing edited frames: 10/180"
+      },
+      {
+        "seconds": 5.937,
+        "stage": "Preparing edited frames: 20/180"
+      },
+      {
+        "seconds": 7.593,
+        "stage": "Preparing edited frames: 30/180"
+      },
+      {
+        "seconds": 9.515,
+        "stage": "Preparing edited frames: 40/180"
+      },
+      {
+        "seconds": 11.125,
+        "stage": "Preparing edited frames: 50/180"
+      },
+      {
+        "seconds": 12.75,
+        "stage": "Preparing edited frames: 60/180"
+      },
+      {
+        "seconds": 14.734,
+        "stage": "Preparing edited frames: 70/180"
+      },
+      {
+        "seconds": 16.703,
+        "stage": "Preparing edited frames: 80/180"
+      },
+      {
+        "seconds": 18.64,
+        "stage": "Preparing edited frames: 90/180"
+      },
+      {
+        "seconds": 20.828,
+        "stage": "Preparing edited frames: 100/180"
+      },
+      {
+        "seconds": 22.765,
+        "stage": "Preparing edited frames: 110/180"
+      },
+      {
+        "seconds": 24.718,
+        "stage": "Preparing edited frames: 120/180"
+      },
+      {
+        "seconds": 27.0,
+        "stage": "Preparing edited frames: 130/180"
+      },
+      {
+        "seconds": 29.031,
+        "stage": "Preparing edited frames: 140/180"
+      },
+      {
+        "seconds": 31.015,
+        "stage": "Preparing edited frames: 150/180"
+      },
+      {
+        "seconds": 33.0,
+        "stage": "Preparing edited frames: 160/180"
+      },
+      {
+        "seconds": 35.172,
+        "stage": "Preparing edited frames: 170/180"
+      },
+      {
+        "seconds": 37.093,
+        "stage": "Preparing edited frames: 180/180"
+      },
+      {
+        "seconds": 37.093,
+        "stage": "Original GSAV arrangement preserved"
+      },
+      {
+        "seconds": 47.89,
+        "stage": "Reading prepared frames"
+      },
+      {
+        "seconds": 49.906,
+        "stage": "Computing quantization ranges"
+      },
+      {
+        "seconds": 51.672,
+        "stage": "Encoding chunk 1/6 (original arrangement)"
+      },
+      {
+        "seconds": 52.187,
+        "stage": "Encoding chunk 2/6 (original arrangement)"
+      },
+      {
+        "seconds": 52.703,
+        "stage": "Encoding chunk 3/6 (original arrangement)"
+      },
+      {
+        "seconds": 53.203,
+        "stage": "Encoding chunk 4/6 (original arrangement)"
+      },
+      {
+        "seconds": 53.718,
+        "stage": "Encoding chunk 5/6 (original arrangement)"
+      },
+      {
+        "seconds": 54.234,
+        "stage": "Encoding chunk 6/6 (original arrangement)"
+      },
+      {
+        "seconds": 54.734,
+        "stage": "Compressing SH coefficients (this may take several minutes)"
+      },
+      {
+        "seconds": 339.812,
+        "stage": "Encoding VP9 video"
+      },
+      {
+        "seconds": 344.093,
+        "stage": "Writing GSAV container"
+      },
+      {
+        "seconds": 345.343,
+        "stage": "Validating exported container"
+      }
+    ]
+  },
+  "quality_summary": {
+    "max_foreground_rgb_mae": 0.0015656875912100077,
+    "mean_foreground_rgb_mae": 0.0012867505593021633,
+    "render_threshold": 0.02,
+    "camera_views": 3,
+    "note": "All frames front view; six boundary/sample frames in three views. Left screenshots edited reference, right new export."
+  },
+  "controlled_small_runs": {
+    "standard": {
+      "seconds": 10.234000000000378,
+      "bytes": 1070930,
+      "brightness": 0.7,
+      "device": "cuda:0",
+      "standard_requested": true,
+      "result": {
+        "frames": 2,
+        "fps": 30,
+        "sh_bands": 3
+      },
+      "events": [
+        {
+          "seconds": 2.593,
+          "stage": "Preparing edited frames: 1/2"
+        },
+        {
+          "seconds": 2.656,
+          "stage": "Preparing edited frames: 2/2"
+        },
+        {
+          "seconds": 2.656,
+          "stage": "Fast export disabled"
+        },
+        {
+          "seconds": 6.187,
+          "stage": "Computing quantization ranges (encoder elapsed 3s)"
+        },
+        {
+          "seconds": 6.437,
+          "stage": "Encoding chunk 1/1 (matching enabled) (encoder elapsed 3s)"
+        },
+        {
+          "seconds": 7.203,
+          "stage": "Compressing SH coefficients (this may take several minutes) (encoder elapsed 4s)"
+        },
+        {
+          "seconds": 9.218,
+          "stage": "Encoding VP9 video (encoder elapsed 6s)"
+        },
+        {
+          "seconds": 9.468,
+          "stage": "Validating exported container (encoder elapsed 6s)"
+        }
+      ]
+    },
+    "fast": {
+      "seconds": 8.687999999998283,
+      "bytes": 1117943,
+      "brightness": 0.7,
+      "device": "cuda:0",
+      "standard_requested": false,
+      "result": {
+        "frames": 2,
+        "fps": 30,
+        "sh_bands": 3
+      },
+      "events": [
+        {
+          "seconds": 1.563,
+          "stage": "Preparing edited frames: 1/2"
+        },
+        {
+          "seconds": 1.625,
+          "stage": "Preparing edited frames: 2/2"
+        },
+        {
+          "seconds": 1.625,
+          "stage": "Original GSAV arrangement preserved"
+        },
+        {
+          "seconds": 5.157,
+          "stage": "Computing quantization ranges (encoder elapsed 3s)"
+        },
+        {
+          "seconds": 5.407,
+          "stage": "Encoding chunk 1/1 (original arrangement) (encoder elapsed 3s)"
+        },
+        {
+          "seconds": 5.672,
+          "stage": "Compressing SH coefficients (this may take several minutes) (encoder elapsed 4s)"
+        },
+        {
+          "seconds": 7.672,
+          "stage": "Validating exported container (encoder elapsed 6s)"
+        }
+      ]
+    }
+  }
+}

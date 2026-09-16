@@ -88,6 +88,7 @@ class SequenceEncoder:
         video_config: VideoConfig | None = None,
         chunk_config: ChunkConfig | None = None,
         device: str = "cuda:0",
+        progress=None,
     ):
         """Initialize sequence encoder.
 
@@ -96,16 +97,24 @@ class SequenceEncoder:
             chunk_config: Chunk processing configuration.
             device: Torch device for computation.
         """
+        self.progress = progress
         self.video_config = video_config or VideoConfig()
         self.chunk_config = chunk_config or ChunkConfig()
-        if self.chunk_config.identity_mode not in ("auto", "stable", "unstructured"):
-            raise ValueError("identity_mode must be auto, stable, or unstructured")
+        if self.chunk_config.identity_mode not in ("auto", "stable", "unstructured", "preserve"):
+            raise ValueError("Unknown identity_mode")
+        if self.chunk_config.identity_mode == "preserve" and (
+            self.chunk_config.matching_enabled or self.chunk_config.lossy_pruning
+            or self.chunk_config.keyframe_snap or self.chunk_config.lo_snap_k != 1
+            or self.chunk_config.gsflow_metadata is not None
+        ):
+            raise ValueError("Preserve mode requires matching/pruning/snapping disabled and lo_snap_k=1")
         if self.chunk_config.identity_mode == "stable" and self.chunk_config.matching_enabled:
             raise ValueError("Stable source identities cannot be combined with matching")
         matching = self.chunk_config.matching_enabled or self.chunk_config.identity_mode == "unstructured"
         self.device = device
         self._skip_sorting = (
             self.chunk_config.gsflow_metadata is not None or matching
+            or self.chunk_config.identity_mode == "preserve"
         )
         # ChunkEncoder is created after global ranges are computed
         # so we can pass the global means bbox for per-frame sorting
@@ -117,6 +126,10 @@ class SequenceEncoder:
                 device=device,
             )
             self.sorter = MortonSortingStrategy()
+
+    def _progress(self, message: str) -> None:
+        if self.progress is not None:
+            self.progress(message)
 
     def compress(
         self,
@@ -143,6 +156,7 @@ class SequenceEncoder:
         if output_path.suffix != ".gsav":
             output_path = output_path.with_suffix(".gsav")
 
+        self._progress("Reading prepared frames")
         frames = self._load_ply_sequence(input_path)
         data = self.encode_frames(frames, audio_path=audio_path,
                                   static_data=static_data, static_encoding=static_encoding)
@@ -157,6 +171,10 @@ class SequenceEncoder:
         """Encode frames in memory; shared by dynamic and single-frame static tracks."""
         if not frames or any(f.means.shape[0] == 0 for f in frames):
             raise ValueError("Frames must contain at least one Gaussian")
+        if self.chunk_config.identity_mode == "preserve":
+            if len({len(f.means) for f in frames}) != 1:
+                raise ValueError("Preserve mode requires equal row counts")
+            prune = False
         frames = [sanitize_frame(f) for f in frames]
         n_frames = len(frames)
 
@@ -187,6 +205,7 @@ class SequenceEncoder:
                 )
 
         logger.info("Computing global quantization ranges...")
+        self._progress("Computing quantization ranges")
         global_ranges = self._compute_global_ranges(frames)
 
         # Create chunk encoder with global means bbox for per-frame sorting
@@ -261,7 +280,8 @@ class SequenceEncoder:
                 all_presence,
             )
         else:
-            for start, end in tqdm(chunk_boundaries, desc="Encoding chunks"):
+            for chunk_number, (start, end) in enumerate(tqdm(chunk_boundaries, desc="Encoding chunks"), 1):
+                self._progress(f"Encoding chunk {chunk_number}/{n_chunks}" + (" (original arrangement)" if self.chunk_config.identity_mode == "preserve" else " (matching enabled)"))
                 chunk_frames = frames[start:end]
 
                 # Move to GPU for processing
@@ -304,6 +324,7 @@ class SequenceEncoder:
         # Global SH encoding (once, across all chunks)
         sh_global_data: SHChunkData | None = None
         if all_sh_tensors:
+            self._progress("Compressing SH coefficients (this may take several minutes)")
             from gscodec.encoder.sh_compress import encode_sh_global
 
             logger.info(
@@ -324,12 +345,14 @@ class SequenceEncoder:
 
         # Encode video with GOP size = chunk_size
         logger.info(f"Encoding {len(all_atlases)} frame atlases (GOP={chunk_size})...")
+        self._progress("Encoding VP9 video")
         video_data, raw_frame_entries = encode_to_ivf(
             all_atlases,
             fps=self.video_config.fps,
             gop_size=chunk_size,
         )
 
+        self._progress("Writing GSAV container")
         # Build frame entries with keyframe flags
         frame_entries = []
         frame_in_chunk = 0

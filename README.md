@@ -1,4 +1,9 @@
-# GSAV / PLY Editor
+# GSAV / PLY Editor - Version 3
+
+Application release **3.0.0** adds guarded fast GSAV export and live export progress.
+See [release notes and benchmark evidence](docs/version-3.md). The `pre-v3` tag
+and unchanged `main` branch preserve the previous baseline; this release is on
+`version-3` with tag `v3.0.0`. The codec format remains GSAV v3.
 
 Combined GSPlay editor and gs-encoder **v3**, including the local integration,
 color/export fixes, regression tests, and September 15, 2026 audit.
@@ -86,10 +91,11 @@ cd ../gs-encoder
 uv run --no-sync python -m pytest -q
 ```
 
-The audit reported 95 GSPlay passes (25 older tests have unreliable boolean
-return conventions), 96 encoder passes and one skip. Two additional encoder
-mask regressions passed afterward. Browser upload, editing, playback, both
-export paths, and independent WebGL2 playback were checked. GPU/large-file,
+Version 3 reports 105 GSPlay passes (25 older tests have unreliable boolean
+return conventions), 107 encoder passes and one skip. Browser upload, color
+editing, fast export and progress were checked. All 180 frames of the large
+benchmark were compared with the edited reference; see release evidence for
+exact coverage and quality limits. GPU/large-file,
 audio/static-track, and native-dialog coverage limits are recorded in the report.
 Local datasets, exported scenes, screenshots, environments and raw audit logs
 are intentionally excluded from this source repository.

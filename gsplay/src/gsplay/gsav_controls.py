@@ -25,6 +25,7 @@ def add_gsav_upload(server, app, path_input) -> None:
         if app.model is None
         else f"**Loaded:** {app.model.get_total_frames()} frames"
     )
+    app._export_status = server.gui.add_markdown("**Export:** idle")
     upload = server.gui.add_upload_button(
         "Upload GSAV",
         mime_type=".gsav",
@@ -119,6 +120,8 @@ def write_edited_sequence(
     audio: str | None = None,
     progress=None,
     output_format: str = "GSAV",
+    status=None,
+    fast_export: bool = True,
 ) -> dict:
     """Use the same PLY export normalization as ordinary PLY export, including SHN."""
     from src.domain.data import GaussianData
@@ -128,6 +131,13 @@ def write_edited_sequence(
         raise GsavError("There are no frames to export.")
     if destination.exists():
         raise GsavError(f"Output already exists; choose a new filename: {destination}")
+    import json
+
+    import numpy as np
+
+    from src.gsplay.gsav_export_layout import SourceLayout
+
+    layout = SourceLayout(model, times, fps, enabled=fast_export and output_format == "GSAV")
     writer = PlyExporter()
     with tempfile.TemporaryDirectory(prefix="gsplay-edited-") as directory:
         for index, time in enumerate(times):
@@ -139,15 +149,44 @@ def write_edited_sequence(
                 # gsply's packed backing buffer can become stale when gsmod replaces
                 # arrays during edits. Make field arrays authoritative at this boundary.
                 data._base = None
+            reference = layout.before(data)
             edited = edit_applier(data)
+            presence = layout.after(index, reference, edited)
+            if presence is not None:
+                np.save(Path(directory) / f"presence_{index:06d}.npy", presence, allow_pickle=False)
             writer.export_frame(edited, Path(directory) / f"frame_{index:06d}.ply")
             if progress:
                 progress(index + 1, len(times))
+            if status and (index == 0 or (index + 1) % 10 == 0 or index + 1 == len(times)):
+                status(f"Preparing edited frames: {index + 1}/{len(times)}")
         if output_format == "PLY":
             return export_ply(Path(directory), destination)
         if output_format != "GSAV":
             raise GsavError(f"Unsupported export format: {output_format}")
-        return encode_gsav(Path(directory), destination, fps=fps, device=device, audio=audio)
+        if layout.valid:
+            (Path(directory) / "source-layout.json").write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "frames": len(times),
+                        "rows": layout.count,
+                        "chunk_size": layout.chunk_size,
+                    }
+                ),
+                encoding="utf-8",
+            )
+        if status:
+            status(layout.reason)
+        logger.info("GSAV export path: %s", layout.reason)
+        return encode_gsav(
+            Path(directory),
+            destination,
+            fps=fps,
+            device=device,
+            audio=audio,
+            preserve_layout=layout.valid,
+            progress=status,
+        )
 
 
 def write_edited_gsav(*args, **kwargs) -> dict:
@@ -230,8 +269,13 @@ def export_sequence(app) -> None:
         f"Applying edits to {len(times)} frames, then writing {output_format}…",
     )
 
+    def report_status(message):
+        if getattr(app, "_export_status", None) is not None:
+            app._export_status.content = f"**Export:** {message}"
+
     def work():
         try:
+            report_status("Preparing edited frames")
             result = write_edited_sequence(
                 model,
                 times,
@@ -241,6 +285,7 @@ def export_sequence(app) -> None:
                 device=device,
                 audio=audio,
                 output_format=output_format,
+                status=report_status,
             )
             _notify(
                 app,
@@ -248,8 +293,10 @@ def export_sequence(app) -> None:
                 f"Saved {result['frames']} frames: {destination}",
                 "green",
             )
+            report_status(f"Complete - saved {result['frames']} frames")
             logger.info("%s exported to %s", output_format, destination)
         except Exception as exc:
+            report_status("Failed - see the error notification")
             logger.exception("Export failed")
             _notify(app, "Export failed", str(exc), "red")
         finally:
