@@ -91,6 +91,7 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
 
     preserve = bool(options.get("preserve_layout", False))
     chunk_size = 30
+    visibility = None
     if preserve:
         import numpy as np
 
@@ -105,6 +106,8 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
         ):
             raise ValueError("Invalid source layout manifest")
         chunk_size = layout["chunk_size"]
+        if layout.get("visibility", False):
+            visibility = []
         for index, path in enumerate(files):
             frame = gsply.plyread(path)
             presence = np.load(source / f"presence_{index:06d}.npy", allow_pickle=False)
@@ -115,6 +118,15 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
                 or not np.array_equal(presence, ~np.isneginf(frame.opacities.reshape(-1)))
             ):
                 raise ValueError("Staged frame does not preserve source rows/presence")
+            if visibility is not None:
+                mask = np.load(source / f"visibility_{index:06d}.npy", allow_pickle=False)
+                if (
+                    mask.dtype != np.bool_
+                    or mask.shape != presence.shape
+                    or np.any(mask & ~presence)
+                ):
+                    raise ValueError("Invalid exported visibility for source rows")
+                visibility.append(mask)
         progress("Fast export: retaining original GSAV arrangement")
     else:
         progress("Standard export: temporal matching enabled")
@@ -139,6 +151,7 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
         output=destination,
         audio_path=options.get("audio"),
         geometry_source=geometry_source,
+        visibility=visibility,
     )
     progress("Validating exported container")
     decoded = SequenceDecoder.from_file(destination)

@@ -1,4 +1,4 @@
-"""Reuse source geometry for verified color-only, full-timeline exports."""
+"""Reuse source geometry for verified color/visibility, full-timeline exports."""
 
 from pathlib import Path
 
@@ -37,8 +37,9 @@ class SourceGeometry:
         rows: int,
         fps: int,
         chunk_size: int,
+        visibility: list[np.ndarray] | None = None,
     ) -> None:
-        """Keep edited color channels 11–13; restore all other source atlas bytes."""
+        """Restore source geometry; update color channels and optional visibility."""
         h = self.header
         if (len(atlases), rows, fps, chunk_size) != (
             h["n_frames"],
@@ -54,10 +55,19 @@ class SourceGeometry:
         if actual != expected:
             raise ValueError("Source geometry reuse requires aligned chunk boundaries")
         side = h["atlas_side"]
+        if visibility is not None:
+            if len(visibility) != len(atlases) or any(
+                mask.dtype != np.bool_ or mask.shape != (rows,) for mask in visibility
+            ):
+                raise ValueError("Invalid source visibility dimensions or type")
+            from gscodec.encoder.video_writer import _precompute_atlas_scatter
+
+            mask_indices = _precompute_atlas_scatter(side, rows)[14]
+            self.mask_flag = HAS_MASK_FLAG
         source_atlases = self.provider.decode_all_frames()
         if len(source_atlases) != len(atlases):
             raise ValueError("Source atlas frame count mismatch")
-        for edited, source in zip(atlases, source_atlases, strict=True):
+        for index, (edited, source) in enumerate(zip(atlases, source_atlases, strict=True)):
             if edited.shape != source.shape or edited.shape != (side * 3, side * 5):
                 raise ValueError("Source atlas dimensions mismatch")
             # Row 2 holds opacity, three color tiles, then presence/padding.
@@ -65,6 +75,15 @@ class SourceGeometry:
                 side * 2 : side * 3, side : side * 4
             ]
             edited[:] = source
+            if visibility is not None:
+                if h["flags"] & HAS_MASK_FLAG and np.any(
+                    visibility[index] & (source.flat[mask_indices] != 16)
+                ):
+                    raise ValueError("Export visibility cannot revive absent source rows")
+                # Keep original geometry and SH rows, replacing only visibility.
+                # 16 is present and 235 absent in the version-3 mask tile.
+                edited[side * 2 : side * 3, side * 4 : side * 5] = 235
+                edited.flat[mask_indices] = np.where(visibility[index], 16, 235)
         original = self.provider.ranges
         for name in (
             "means_min",

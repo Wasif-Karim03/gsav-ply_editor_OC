@@ -138,6 +138,8 @@ class SequenceEncoder:
         audio_path: str | Path | None = None,
         static_asset_path: str | Path | None = None,
         geometry_source: str | Path | None = None,
+        *,
+        visibility: list[np.ndarray] | None = None,
     ) -> None:
         """Compress a PLY or SPZ sequence to GSAV format.
 
@@ -147,6 +149,8 @@ class SequenceEncoder:
             audio_path: Optional audio file to embed (any format, transcoded to Opus).
             geometry_source: Source GSAV for caller-verified color-only edits with
                 unchanged rows and timeline. Its geometry and audio are retained.
+            visibility: Optional per-frame masks for filtering original rows.
+                Requires geometry_source; does not compact or reorder the rows.
         """
         input_path = Path(input_dir)
         output_path = Path(output)
@@ -162,7 +166,7 @@ class SequenceEncoder:
         self._progress("Reading prepared frames")
         data = self.encode_frames(self._load_ply_sequence(input_path), audio_path=audio_path,
                                   static_data=static_data, static_encoding=static_encoding,
-                                  geometry_source=geometry_source)
+                                  geometry_source=geometry_source, visibility=visibility)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(data)
         logger.info("Wrote %d bytes to %s", len(data), output_path)
@@ -171,6 +175,7 @@ class SequenceEncoder:
         self, frames: list[GSTensor], *, audio_path: str | Path | None = None,
         static_data: bytes = b"", static_encoding: int = 0, prune: bool = True,
         geometry_source: str | Path | None = None,
+        visibility: list[np.ndarray] | None = None,
     ) -> bytes:
         """Encode frames in memory; shared by dynamic and single-frame static tracks.
 
@@ -180,6 +185,8 @@ class SequenceEncoder:
         if not frames or any(f.means.shape[0] == 0 for f in frames):
             raise ValueError("Frames must contain at least one Gaussian")
         source_geometry = None
+        if visibility is not None and geometry_source is None:
+            raise ValueError("Visibility overrides require verified source geometry")
         if geometry_source is not None:
             if self.chunk_config.identity_mode != "preserve" or static_data:
                 raise ValueError("Source geometry reuse requires verified preserved rows")
@@ -379,10 +386,11 @@ class SequenceEncoder:
             )
 
         if source_geometry is not None:
-            self._progress("Preserving source geometry bytes; updating color tiles only")
+            self._progress("Preserving source geometry; updating colors and visibility")
             source_geometry.merge(
                 all_atlases, global_ranges, rows=n_gaussians,
                 fps=self.video_config.fps, chunk_size=chunk_size,
+                visibility=visibility,
             )
 
         # Encode video with GOP size = chunk_size
@@ -1016,6 +1024,10 @@ class SequenceEncoder:
             for f in frames
         ])
         device = self.device
+        def color_values(frame):
+            values = frame.sh0.to(device).float()
+            return values if self.chunk_config.identity_mode == "preserve" else values.clamp(-2, 4)
+
         _ycbcr_mat = torch.tensor(
             [
                 [0.299, 0.587, 0.114],
@@ -1037,7 +1049,7 @@ class SequenceEncoder:
         quats_max = quats_asin.amax(dim=0)
         opacity_min = first.opacities.to(device).amin()
         opacity_max = first.opacities.to(device).amax()
-        sh0_ycc = torch.einsum("nc,dc->nd", first.sh0.to(device).float().clamp(-2, 4), _ycbcr_mat)
+        sh0_ycc = torch.einsum("nc,dc->nd", color_values(first), _ycbcr_mat)
         sh0_min = sh0_ycc.amin(dim=0)
         sh0_max = sh0_ycc.amax(dim=0)
 
@@ -1070,7 +1082,7 @@ class SequenceEncoder:
             del op_b
 
             sh0_b = torch.cat(
-                [f.sh0.to(device).float().clamp(-2, 4) for f in batch], dim=0
+                [color_values(f) for f in batch], dim=0
             )  # [Total_N, 3]
             sh0_ycc_b = torch.einsum("nc,dc->nd", sh0_b, _ycbcr_mat)
             sh0_min = torch.minimum(sh0_min, sh0_ycc_b.amin(dim=0))
@@ -1082,8 +1094,9 @@ class SequenceEncoder:
         opacity_min = opacity_min.clamp(min=OPACITY_CLIP[0])
         opacity_max = opacity_max.clamp(max=OPACITY_CLIP[1])
         # SH0 clip in YCbCr space — wider range for Cb/Cr channels
-        sh0_min = sh0_min.clamp(min=-4.0)
-        sh0_max = sh0_max.clamp(max=4.0)
+        if self.chunk_config.identity_mode != "preserve":
+            sh0_min = sh0_min.clamp(min=-4.0)
+            sh0_max = sh0_max.clamp(max=4.0)
 
         return QuantRanges(
             means_min=means_min.cpu().numpy(),

@@ -437,7 +437,13 @@ def encode_sh_global(
                 centers, labels, values, counts = exact
                 if progress is not None:
                     progress(f"Encoding exact SH palette: {len(centers)} distinct vectors")
-                codebook = build_scalar_codebook(values, SH_CODEBOOK_SIZE, value_counts=counts)
+                if len(values) <= SH_CODEBOOK_SIZE:
+                    # A decoded source (including uniform brightness edits) can
+                    # already fit exactly. Histogram fitting would merge rare
+                    # values unnecessarily and introduce another lossy step.
+                    codebook = np.pad(values, (0, SH_CODEBOOK_SIZE - len(values)), mode="edge")
+                else:
+                    codebook = build_scalar_codebook(values, SH_CODEBOOK_SIZE, value_counts=counts)
                 quantized = quantize_to_codebook(centers, codebook)
                 if reuse_inactive:
                     from gscodec.encoder.masks import reuse_inactive_rows

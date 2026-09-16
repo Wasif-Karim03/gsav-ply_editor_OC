@@ -128,6 +128,7 @@ def write_edited_sequence(
     output_format: str = "GSAV",
     status=None,
     fast_export: bool = True,
+    visibility=None,
 ) -> dict:
     """Use the same PLY export normalization as ordinary PLY export, including SHN."""
     from src.domain.data import GaussianData
@@ -164,6 +165,20 @@ def write_edited_sequence(
             reference = layout.before(data)
             edited = edit_applier(data)
             presence = layout.after(index, reference, edited)
+            if visibility is not None:
+                mask = visibility.mask
+                if (
+                    presence is None
+                    or mask is None
+                    or mask.dtype != np.bool_
+                    or mask.shape != presence.shape
+                ):
+                    raise GsavError("Cannot preserve filtered source rows; export aborted.")
+                np.save(
+                    Path(directory) / f"visibility_{index:06d}.npy",
+                    presence & mask,
+                    allow_pickle=False,
+                )
             if presence is not None:
                 np.save(Path(directory) / f"presence_{index:06d}.npy", presence, allow_pickle=False)
             writer.export_frame(edited, Path(directory) / f"frame_{index:06d}.ply")
@@ -183,6 +198,7 @@ def write_edited_sequence(
                         "frames": len(times),
                         "rows": layout.count,
                         "chunk_size": layout.chunk_size,
+                        "visibility": visibility is not None,
                     }
                 ),
                 encoding="utf-8",
@@ -211,7 +227,7 @@ def export_sequence(app) -> None:
     """Start one export with frozen edit settings; report completion or failure in UI."""
     from copy import deepcopy
 
-    from src.gsplay.core.container import create_edit_manager
+    from src.gsplay.gsav_visibility import create_export_manager
 
     if getattr(app, "_gsav_export_running", False):
         _notify(app, "Export in progress", "Wait for the current export to finish.")
@@ -256,7 +272,9 @@ def export_sequence(app) -> None:
             raise GsavError("This GSAV codec requires an integer Source FPS.")
         fps = int(fps_value) if output_format == "GSAV" else 30
         app._update_edit_history()
-        manager = create_edit_manager(deepcopy(app.config), device)
+        manager, visibility = create_export_manager(
+            deepcopy(app.config), device, model, times, fps, output_format
+        )
         bounds = deepcopy(app.scene_bounds_manager.get_bounds())
         metadata = dict(app.model_component.gsav_metadata)
         audio = metadata.get("audio")
@@ -299,6 +317,7 @@ def export_sequence(app) -> None:
                 audio=audio,
                 output_format=output_format,
                 status=report_status,
+                visibility=visibility,
             )
             _notify(
                 app,

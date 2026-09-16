@@ -213,7 +213,10 @@ class ChunkEncoder:
         # Decoder applies inverse: sin(x * π/2). Cost: 1 GPU sin() per component.
         all_quats = torch.asin(all_quats.clamp(-0.9999, 0.9999)) / (3.14159265 / 2)
         all_opacities = torch.stack([f.opacities.clamp(-6, 12) for f in sorted_frames])
-        all_sh0 = torch.stack([f.sh0.clamp(-2, 4) for f in sorted_frames])
+        all_sh0 = torch.stack([
+            f.sh0 if self.identity_mode == "preserve" else f.sh0.clamp(-2, 4)
+            for f in sorted_frames
+        ])
         # SH0 RGB→YCbCr decorrelation: concentrates energy in Y channel.
         _ycbcr_mat = torch.tensor(
             [

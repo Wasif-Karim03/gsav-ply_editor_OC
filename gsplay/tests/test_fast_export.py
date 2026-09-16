@@ -156,6 +156,41 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
         finally:
             replay.on_shutdown()
 
+        from gsmod import FilterValues
+
+        from src.gsplay.gsav_visibility import create_export_manager
+
+        config.filter_values = FilterValues(sphere_radius=0.9)
+        filtered_manager, visibility = create_export_manager(
+            config, "cpu", loaded, range(4), 30, "GSAV"
+        )
+        assert visibility is not None
+        filtered_path = tmp_path / "filtered.gsav"
+        messages = []
+        write_edited_sequence(
+            loaded,
+            list(range(4)),
+            filtered_manager.apply_edits,
+            filtered_path,
+            fps=30,
+            device="cpu",
+            visibility=visibility,
+            status=messages.append,
+        )
+        assert "Original GSAV arrangement preserved" in messages
+        filtered = GsavModel(filtered_path, device="cpu")
+        try:
+            for i in range(4):
+                data = loaded.get_frame_at_source_time(i).to_gstensor("cpu")
+                preview = create_edit_manager(config, "cpu").apply_edits(data)
+                actual = filtered._raw(i)
+                active = actual["presence"]
+                expected = preview.means[preview.opacities.reshape(-1) > 0].numpy()
+                np.testing.assert_array_equal(actual["means"][active], expected)
+                assert len(actual["means"]) == len(loaded._raw(i)["means"])
+        finally:
+            filtered.on_shutdown()
+
         # A geometry edit is detected even when performed by an arbitrary callback.
         def translated(data):
             data.means = data.means + 1

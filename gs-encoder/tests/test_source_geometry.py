@@ -17,7 +17,8 @@ from gscodec.encoder.source_geometry import SourceGeometry
 
 @pytest.mark.parametrize("degree", [0, 3])
 @pytest.mark.parametrize("version", [1, 3])
-def test_color_export_keeps_exact_geometry(tmp_path, mock_gstensor, degree, version):
+@pytest.mark.parametrize("brightness", [0.7, 3.78])
+def test_color_export_keeps_exact_geometry(tmp_path, mock_gstensor, degree, version, brightness):
     frames = [mock_gstensor[:16].clone() for _ in range(4)]
     for i, frame in enumerate(frames):
         frame.means += i * 0.01
@@ -45,9 +46,9 @@ def test_color_export_keeps_exact_geometry(tmp_path, mock_gstensor, degree, vers
     before = SequenceDecoder(GSAVFileProvider(source_bytes)).decode_all()
     edited = [f.clone() for f in frames]
     for f in edited:
-        f.sh0 = (f.sh0 + 0.5 / 0.28209479177387814) * 0.7 - 0.5 / 0.28209479177387814
+        f.sh0 = (f.sh0 + 0.5 / 0.28209479177387814) * brightness - 0.5 / 0.28209479177387814
         if degree:
-            f.shN *= 0.7
+            f.shN *= brightness
     encoder = SequenceEncoder(
         device="cpu",
         chunk_config=ChunkConfig(
@@ -62,6 +63,11 @@ def test_color_export_keeps_exact_geometry(tmp_path, mock_gstensor, degree, vers
     for a, b in zip(before, after, strict=True):
         for field in ("means", "scales", "quats", "opacities", "masks"):
             np.testing.assert_array_equal(getattr(a, field), getattr(b, field))
+    for expected, actual in zip(edited, after, strict=True):
+        mask = actual.masks
+        np.testing.assert_allclose(expected.sh0.numpy()[mask], actual.sh0[mask], atol=0.1)
+        if degree:
+            np.testing.assert_array_equal(expected.shN.numpy()[mask], actual.shN[mask])
     with pytest.raises(ValueError, match="unchanged timeline"):
         encoder.encode_frames(edited[:2], geometry_source=source)
 
@@ -98,3 +104,34 @@ def test_audio_is_copied_without_reencoding(tmp_path, mock_gstensor, monkeypatch
     monkeypatch.setattr(sequence_encoder, "transcode_to_opus", forbidden)
     result = encoder.encode_frames(frames, geometry_source=source, audio_path=wav)
     assert GSAVFileProvider(result).get_audio() == GSAVFileProvider(source).get_audio()
+
+
+def test_visibility_retains_geometry_and_never_requires_matching(tmp_path, mock_gstensor):
+    frames = [mock_gstensor[:16].clone() for _ in range(4)]
+    frames[1].masks[3] = False
+    encoder = SequenceEncoder(
+        device="cpu",
+        chunk_config=ChunkConfig(
+            identity_mode="preserve", size=2, sh_bands=0, lo_snap_k=1, keyframe_snap=False
+        ),
+    )
+    source = tmp_path / "source.gsav"
+    source.write_bytes(encoder.encode_frames(frames))
+    masks = [np.arange(16) % 2 == i % 2 for i in range(4)]
+    masks[1][3] = False
+    masks[3][:] = False  # Entirely hidden frames remain valid.
+    data = encoder.encode_frames(frames, geometry_source=source, visibility=masks)
+    original = SequenceDecoder.from_file(source).decode_all()
+    edited = SequenceDecoder(GSAVFileProvider(data)).decode_all()
+    for a, b, mask in zip(original, edited, masks, strict=True):
+        np.testing.assert_array_equal(b.masks, mask)
+        for field in ("means", "scales", "quats"):
+            np.testing.assert_array_equal(getattr(a, field)[mask], getattr(b, field)[mask])
+    with pytest.raises(ValueError, match="visibility dimensions"):
+        encoder.encode_frames(frames, geometry_source=source, visibility=masks[:2])
+    with pytest.raises(ValueError, match="Visibility overrides"):
+        encoder.encode_frames(frames, visibility=masks)
+    invalid = [mask.copy() for mask in masks]
+    invalid[1][3] = True
+    with pytest.raises(ValueError, match="cannot revive"):
+        encoder.encode_frames(frames, geometry_source=source, visibility=invalid)
