@@ -26,18 +26,59 @@ def test_picker_updates_path_only_when_selected(monkeypatch, tmp_path, cancelled
         def on_click(self, callback):
             self.callback = callback
 
-    button = Button()
-    server = SimpleNamespace(gui=SimpleNamespace(add_button=lambda *a, **k: button))
+    buttons = []
+
+    def add_button(*a, **k):
+        button = Button()
+        buttons.append(button)
+        return button
+
+    server = SimpleNamespace(
+        gui=SimpleNamespace(
+            add_button=add_button, add_markdown=lambda *a: SimpleNamespace(content="")
+        )
+    )
     controls = {
         "export_path": SimpleNamespace(value="original"),
         "export_format": SimpleNamespace(value="GSAV"),
     }
     monkeypatch.setattr(
-        "src.gsplay.folder_picker_controls.choose_folder", lambda _: None if cancelled else tmp_path
+        "src.gsplay.folder_picker_controls.choose_folder",
+        lambda _, **kwargs: None if cancelled else tmp_path,
     )
     add_folder_picker(server, controls)
+    button = buttons[0]
     button.callback(SimpleNamespace(client=None))
     assert controls["export_path"].value == (
         "original" if cancelled else str(tmp_path / "scene.gsav")
     )
     assert not button.disabled
+    assert not buttons[1].visible
+
+
+def test_native_picker_cancel_terminates_helper(monkeypatch, tmp_path):
+    import threading
+
+    from src.infrastructure import folder_picker
+
+    if folder_picker.os.name != "nt":
+        pytest.skip("Windows native picker")
+
+    class Process:
+        stopped = False
+
+        def poll(self):
+            return 0 if self.stopped else None
+
+        def terminate(self):
+            self.stopped = True
+
+        def wait(self, timeout):
+            assert self.stopped
+
+    process = Process()
+    monkeypatch.setattr(folder_picker.subprocess, "Popen", lambda *a, **k: process)
+    cancelled = threading.Event()
+    cancelled.set()
+    assert folder_picker.choose_folder(str(tmp_path), cancel=cancelled) is None
+    assert process.stopped

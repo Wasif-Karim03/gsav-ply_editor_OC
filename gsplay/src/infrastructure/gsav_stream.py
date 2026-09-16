@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
+from src.infrastructure.frame_buffer import FrameBuffer
 from src.infrastructure.gsav import GsavError, codec_python, validate_gsav
 
 
@@ -27,6 +28,7 @@ class GsavStream:
         self._closed = False
         self._responses = queue.Queue(maxsize=1)
         self._process = None
+        self._buffer = None
         try:
             self._process = subprocess.Popen(
                 [
@@ -42,6 +44,8 @@ class GsavStream:
             )
             threading.Thread(target=self._read_loop, daemon=True, name="gsav-pipe").start()
             self.metadata = json.loads(self._receive())
+            if os.name == "nt":
+                self._buffer = FrameBuffer(self.metadata["frame_bytes"])
             atexit.register(self.close)
         except BaseException:
             self.close()
@@ -88,12 +92,17 @@ class GsavStream:
             if not 0 <= index < self.metadata["frames"]:
                 raise GsavError("Frame index outside the GSAV timeline.")
             try:
-                self._process.stdin.write((json.dumps({"frame": index}) + "\n").encode())
+                request = {"frame": index}
+                if self._buffer is not None:
+                    request["buffer"] = {"name": self._buffer.name, "size": self._buffer.size}
+                self._process.stdin.write((json.dumps(request) + "\n").encode())
                 self._process.stdin.flush()
                 payload = self._receive()
             except (BrokenPipeError, OSError) as exc:
                 self.close()
                 raise GsavError("GSAV decoder is unavailable; reload the scene.") from exc
+            if self._buffer is not None:
+                return self._buffer.read(json.loads(payload))
             with np.load(io.BytesIO(payload), allow_pickle=False) as data:
                 return {name: data[name] for name in data.files}
 
@@ -109,4 +118,6 @@ class GsavStream:
             self._process.stdin.close()
             self._process.stdout.close()
         self._log.close()
+        if self._buffer is not None:
+            self._buffer.close()
         self._directory.cleanup()

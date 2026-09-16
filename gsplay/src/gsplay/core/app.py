@@ -2391,7 +2391,7 @@ class UniversalGSPlay:
         self.config.volume_filter = VolumeFilter()
 
         if self.viewer:
-            self.viewer._update_filter_visualization()
+            self._update_filter_visualization()
             self.viewer.rerender(None)
 
     # =========================================================================

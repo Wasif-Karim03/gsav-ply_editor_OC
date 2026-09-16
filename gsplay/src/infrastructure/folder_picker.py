@@ -5,10 +5,12 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 
-def choose_folder(initial_path: str) -> Path | None:
+def choose_folder(initial_path: str, cancel: threading.Event | None = None) -> Path | None:
     """Show the Windows folder dialog in an isolated STA process; None on cancel."""
     if os.name != "nt":
         raise RuntimeError("The native folder picker is currently available on Windows only.")
@@ -25,8 +27,16 @@ $dialog.Description = 'Choose the folder for your GSPlay export'
 $dialog.ShowNewFolderButton = $true
 $dialog.SelectedPath = $env:GSPLAY_INITIAL_FOLDER
 $owner = New-Object System.Windows.Forms.Form
+$owner.Text = 'GSPlay export folder'
 $owner.TopMost = $true
+$owner.StartPosition = 'CenterScreen'
+$owner.Width = 420
+$owner.Height = 100
+$owner.ShowInTaskbar = $true
 try {
+    $owner.Show()
+    $owner.Activate()
+    [System.Windows.Forms.Application]::DoEvents()
     $selected = $null
     if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
         $selected = $dialog.SelectedPath
@@ -42,7 +52,7 @@ try {
         environment = os.environ.copy()
         environment["GSPLAY_INITIAL_FOLDER"] = str(initial.resolve())
         environment["GSPLAY_PICKER_RESULT"] = str(result)
-        completed = subprocess.run(
+        process = subprocess.Popen(
             [
                 "powershell.exe",
                 "-NoProfile",
@@ -51,11 +61,24 @@ try {
                 base64.b64encode(script.encode("utf-16-le")).decode("ascii"),
             ],
             env=environment,
-            capture_output=True,
-            timeout=300,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        if completed.returncode or not result.is_file():
+        try:
+            deadline = time.monotonic() + 300
+            while process.poll() is None:
+                if cancel is not None and cancel.wait(0.1):
+                    return None
+                if cancel is None:
+                    time.sleep(0.1)
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Folder selection timed out. Try again or type a path.")
+        finally:
+            if process.poll() is None:
+                process.terminate()
+            process.wait(timeout=10)
+        if process.returncode or not result.is_file():
             raise RuntimeError(
                 "Windows could not open the folder picker. You can still type a path."
             )

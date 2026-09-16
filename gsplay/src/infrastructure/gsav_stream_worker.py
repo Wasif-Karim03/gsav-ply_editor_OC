@@ -7,6 +7,7 @@ import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from frame_buffer import FrameBuffer
 from gsav_worker import stored_sh_degree
 
 
@@ -34,6 +35,8 @@ def serve(source: Path, workspace: Path, output) -> None:
         json.dumps(
             {
                 "frames": len(decoder),
+                "frame_bytes": decoder.n_gaussians
+                * ((14 + {0: 0, 1: 9, 2: 24, 3: 45}[bands]) * 4 + 1),
                 "chunk_size": decoder.chunk_size,
                 "chunks": [[c["start_frame"], c["end_frame"] + 1] for c in provider.chunk_index],
                 "fps": decoder.fps,
@@ -48,9 +51,12 @@ def serve(source: Path, workspace: Path, output) -> None:
     # A bounded decoded video block amortizes FFmpeg startup while retaining seeking.
     block_size = max(1, min(32, (128 * 1024**2) // (provider.atlas_width * provider.atlas_height)))
     block_start, atlases = -1, []
+    shared = None
     for line in sys.stdin:
         request = json.loads(line)
         if request.get("close"):
+            if shared is not None:
+                shared.close()
             return
         index = request["frame"]
         if not isinstance(index, int) or not 0 <= index < len(decoder):
@@ -77,6 +83,11 @@ def serve(source: Path, workspace: Path, output) -> None:
         arrays["presence"] = np.asarray(frame.masks, dtype=bool).reshape(-1)
         if arrays["shN"] is None:
             arrays["shN"] = np.empty((len(frame), 0, 3), dtype=np.float32)
+        if "buffer" in request:
+            if shared is None:
+                shared = FrameBuffer(**request["buffer"])
+            send(json.dumps(shared.write(arrays)).encode())
+            continue
         buffer = io.BytesIO()
         np.savez(buffer, **arrays)
         send(buffer.getvalue())

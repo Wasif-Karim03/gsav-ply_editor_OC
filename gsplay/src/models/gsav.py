@@ -29,6 +29,7 @@ class GsavModel:
         self._cache = OrderedDict()
         self._cache_bytes = 0
         self._lock = threading.RLock()
+        self._gpu_cache = None
 
     @classmethod
     def metadata(cls):
@@ -67,9 +68,14 @@ class GsavModel:
 
     def get_gaussians_at_normalized_time(self, normalized_time):
         index = max(0, min(round(normalized_time * (self.total_frames - 1)), self.total_frames - 1))
-        arrays = self._raw(index)
         self._last_loaded_filename = self.path.name
         self._last_loaded_frame_index = index
+        gpu_mode = self.processing_mode in ("all_gpu", "gpu")
+        key = (index, self.device)
+        with self._lock:
+            if gpu_mode and self._gpu_cache is not None and self._gpu_cache[0] == key:
+                return self._gpu_cache[1].clone()
+        arrays = self._raw(index)
         arrays.pop("presence", None)
         raw = GSData(**arrays)
         data = raw.denormalize(inplace=True)
@@ -79,9 +85,27 @@ class GsavModel:
         if data.shN is None or not data.shN.size:
             data = data.to_rgb(inplace=True)
             data.sh0 = np.clip(data.sh0, 0.0, 1.0)
-        if self.processing_mode in ("all_gpu", "gpu"):
-            tensor = GaussianData.from_gsdata(data).to_gstensor(self.device)
-            tensor._base = None
+        if gpu_mode:
+            import torch
+
+            from src.domain.entities import GSTensor
+
+            # Decoder fields already have the correct SH ordering. Transfer them
+            # directly instead of packing and transposing a second CPU PLY layout.
+            fields = {
+                name: torch.from_numpy(np.ascontiguousarray(getattr(data, name))).to(self.device)
+                for name in ("means", "scales", "quats", "opacities", "sh0", "shN")
+                if getattr(data, name) is not None
+            }
+            tensor = GSTensor(**fields)
+            tensor.copy_format_from(data)
+            with self._lock:
+                # Keep one pristine frame for camera moves and repeated color edits.
+                # Always return a clone so in-place edits cannot accumulate.
+                self._gpu_cache = None
+                if sum(t.numel() * t.element_size() for t in fields.values()) <= 128 * 1024**2:
+                    self._gpu_cache = (key, tensor)
+                    return tensor.clone()
             return tensor
         return data
 
@@ -115,3 +139,4 @@ class GsavModel:
             self._stream.close()
             self._cache.clear()
             self._cache_bytes = 0
+            self._gpu_cache = None

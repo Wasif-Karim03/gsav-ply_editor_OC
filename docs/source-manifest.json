@@ -141,7 +141,7 @@
         "src/gsplay/control/__init__.py": "21cc97098cf8103ed7ac72fd512dfbf3305052bb7d12826f08bf1dae9776a473",
         "src/gsplay/control/server.py": "41f87d97e6467cba620f6cceb467a4bfed3215f7453948495c0321b4dbf01577",
         "src/gsplay/core/api.py": "50049d534e7e0e542083660cd1b1deb7d5d200f7be99afe6886040dfc8fbe180",
-        "src/gsplay/core/app.py": "592f714f0bb5ed4462183d419570ff530ba9f8f1350a3606cb3f5371c7c6dd83",
+        "src/gsplay/core/app.py": "4b87d5d35396304e27d73afd343b039f075318a56088923eaca5dfeae4a7e726",
         "src/gsplay/core/components/__init__.py": "4006acf1d8f6768f2bc48c71c10c2f784914e8cb34ca73b487f76f9bb4faf03a",
         "src/gsplay/core/components/export_component.py": "ea1475401a5bb00af76ee6b0f3ba32f2740f2bf4e60cf60476dbd00d29be9c1e",
         "src/gsplay/core/components/model_component.py": "7b1fc72dce40dcde89684f7aa910af1681c9c28ff1589a42dcd48c87f94f1d62",
@@ -155,7 +155,7 @@
         "src/gsplay/core/setup.py": "4717f2f4aff05ca568d19d309bf19e3fac21f739ccd28d6e740326b74def0113",
         "src/gsplay/dispatch/__init__.py": "5ba1ddfa0efaad185fcf3921c8cd26dcb0f76faa1237b1899f3e1742bc33d6ff",
         "src/gsplay/dispatch/dispatcher.py": "c130fd932c21ed34130131a0ae188601650da1416e70688cc43eba5a8d3a6e31",
-        "src/gsplay/folder_picker_controls.py": "5901870ddd49226004409a8b6e17c8d5dc7f5a4aa13d559550b7dadac2b71465",
+        "src/gsplay/folder_picker_controls.py": "bace6e15cc7548d57f3940dfe53d1ceece2d21774a8993c7e7e736c6e00950b7",
         "src/gsplay/gsav_controls.py": "9339258bbf62438b1b4e05d5b14b92f126501a2b2d2d17594520625a61a9fc4e",
         "src/gsplay/initialization/__init__.py": "8512b69e22ede2aa8296baee3b822a63ea3ada4181d28bdf699c45c5473142da",
         "src/gsplay/initialization/ui_setup.py": "950546058e2f43b465cb2de0e6f687918c5beabc509ffac58849630b9e702ccb",
@@ -200,10 +200,10 @@
         "src/infrastructure/exporters/factory.py": "ef9a2192bf5a30b8f94d55d2a180e69818d1a308fc2ab18de1ffa250ac0e5ec9",
         "src/infrastructure/exporters/ply_exporter.py": "69dde932d7d47ef97701b6926fc675b6e017bd4d1c2b3d3601c588c94692e2c7",
         "src/infrastructure/exporters/ply_sink.py": "4bde2cf248459ce001db8158354e09184d25bfa10f44499aeee73dc4fa030394",
-        "src/infrastructure/folder_picker.py": "6031123fb0c5db1c3f62f66a363efa27b3631b856d8c6b3b86deebef26e19917",
+        "src/infrastructure/folder_picker.py": "b37611cce3e19de4d268929c2731f5d1c2571f3d79994135483200719217bfab",
         "src/infrastructure/gsav.py": "815251bd1b00075da16857d61e6f501c80000cf80e49af851c8c6e8e37a61a8e",
-        "src/infrastructure/gsav_stream.py": "21c733d05411a7cc96aca5988ee4e38ec66b37e64c84f5c991717d9a7f2d5529",
-        "src/infrastructure/gsav_stream_worker.py": "40e35736053a2656428cab0145fee63b8b8bdb0691cfb9d61c622777d7a0f938",
+        "src/infrastructure/gsav_stream.py": "7296e12ce2560b390d515b97bb42729d1bad7f30564fe6ab2802cfde78606eb6",
+        "src/infrastructure/gsav_stream_worker.py": "01ed105a3267199ec4a6417408b5ca088f6bc7855a1d90a4df97589c7ad283dd",
         "src/infrastructure/gsav_worker.py": "5f6bb062ae6ff6089441287a6185221f07e96846b300ff8fdff52c54fbd62a94",
         "src/infrastructure/health/__init__.py": "6efea337ba52a06894e06ac9bed480cba0d8d34af729786cad469adb0ab80ecb",
         "src/infrastructure/health/monitor.py": "56100b523d9afbf104b2fb04d4eb87db309d0c82d0ba4480911e1e7672e38195",
@@ -234,7 +234,7 @@
         "src/models/__init__.py": "bb48b7b2c44f085247974133e144f9c9b155fd317c38c42105dbd316c3bed1d5",
         "src/models/composite/__init__.py": "443db2ce381260baeaf3036aaedc2b8608b4601f52a4834d5f23870e0660f545",
         "src/models/composite/composite_model.py": "d64c6af3238dde8b828847eb0551eb15713e5d1c52f680681b85cd5e649313c9",
-        "src/models/gsav.py": "bc7c6df19065931ec6911144e659f8fb4bad46c6bbafc019b439617c32dedcb5",
+        "src/models/gsav.py": "50f4b236c439fea3e97893aded735afe7cb34dc2f616b575f6e5351d7b1f43f7",
         "src/models/ply/__init__.py": "42337e4a16cbc9de3dc4db13063b47c547940758c6818168140875d2c509420a",
         "src/models/ply/interpolated_model.py": "cbd7b004103dd92955436eeecc245e02b12129624088b236029cd17cc4255e8c",
         "src/models/ply/optimized_model.py": "bd57f277c4a8ee0cd5ff75bfd9c8eaed1c79e7846edebc10b2f8a2ab6a223f59",
@@ -264,7 +264,7 @@
         "tests/conftest.py": "38305e6a0c7e1f8b6b7c1b79f91c2f8af357559fd8d6c6194414e56e31641f60",
         "tests/functional/test_ply_roundtrip.py": "851c6f3a050aff1534d2410e77c3a1fe8c2ab7c9902dd004b5e41de65906046e",
         "tests/test_color_format_roundtrip.py": "2e6f32dd023fb6687ba6c2d76ccb7f73b81cb8b6a4bf7ef0c45f064780a74195",
-        "tests/test_folder_picker.py": "d35938e017a5b2bf096a68e6bd65323f9b2140e4a90a498ff3ab3c9c42c01c8e",
+        "tests/test_folder_picker.py": "0141f31ab64675bf2244bdc0983bf12ef99c8029874fd5faee1c7cb7b5c610a6",
         "tests/test_gs_bridge.py": "bc9a8172f57ac78ba49c9d6de796ad1e6255867829d736a7324f267e6ac6ab61",
         "tests/test_gsav_integration.py": "a7aecbcecb39a205aee4415626c4323e46441ec422822a08eda60136da2165ae",
         "tests/test_natural_sort.py": "0e588b1fbc05fd94bfca3f197cabbe60042ce40474bb9eae78673bcb8e0e3af5",
@@ -274,7 +274,10 @@
         "uv.lock": "f8a11591142f85efc43084242095414088b4e3ed57730bbe73033b9e8e1548bf",
         "scripts/benchmark_gsav_export.py": "b382cc3013803cd22062b530d7c7e6adf07df3200b2231f027a8f892a160f1cb",
         "src/gsplay/gsav_export_layout.py": "91f5307aed3c02844313799f96074fbb4b0de453b4ed8930c7571249bb250219",
-        "tests/test_fast_export.py": "46ab5c6d5edd3d67b1eb6b3dcae468d66962126b1533b503e130a537644731d2"
+        "tests/test_fast_export.py": "46ab5c6d5edd3d67b1eb6b3dcae468d66962126b1533b503e130a537644731d2",
+        "src/infrastructure/frame_buffer.py": "77143e0d891e922ea168def1681b8d8a3412aec1b384cc545eda0f4f9d5acca1",
+        "tests/test_frame_buffer.py": "06380e2129b3f0a1c54affaaeaab56ffbcdb1c9e6fb6652fe7c7c59674cc349e",
+        "tests/test_filter_reset.py": "30e0e4084adc943834c4486b804b3757512ede80307c74e1e287290856a3686f"
       }
     },
     "gs-encoder": {
@@ -406,6 +409,6 @@
     "gsplay/.claude/settings.local.json",
     "gs-encoder/.claude/settings.local.json"
   ],
-  "release": "3.0.0",
+  "release": "3.0.1",
   "baseline_commit": "58855adc3a83fec90ba78dcc3f777d2787f7fc65"
 }
