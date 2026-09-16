@@ -118,8 +118,6 @@ class ModelComponent:
                 self.source_path = self.metadata["source_path"]
                 logger.debug(f"Source path: {self.source_path}")
 
-            self._release_previous(previous)
-
             # Emit loading completed event
             if self.event_bus:
                 self.event_bus.emit(
@@ -129,6 +127,10 @@ class ModelComponent:
                     total_frames=self.model.get_total_frames(),
                     source_path=str(self.source_path) if self.source_path else None,
                 )
+
+            # MODEL_LOADED replaces the render closure under the viewer lock.
+            # Retire the old decoder only after in-flight renders have finished.
+            self._release_previous(previous)
 
             logger.info(f"Model loaded successfully: {self.model.get_total_frames()} frames")
 

@@ -15,7 +15,7 @@ class SourceLayout:
 
     def __init__(self, model, times, fps, enabled=True):
         self.model = model
-        self.reason = "Source or frame selection requires ordinary export"
+        self.reason = "Source does not provide original GSAV frame identities"
         self.valid = False
         self.chunk_size = 0
         self.count = None
@@ -27,12 +27,14 @@ class SourceLayout:
         n = model.get_total_frames()
         meta = model.gsav_metadata
         size = meta.get("chunk_size", 0)
-        if (
-            list(times) != list(range(n))
-            or fps != meta.get("fps")
-            or not isinstance(size, int)
-            or size <= 0
-        ):
+        if list(times) != list(range(n)):
+            self.reason = "Frame selection differs from the complete original timeline"
+            return
+        if fps != meta.get("fps"):
+            self.reason = "Export FPS differs from the source FPS"
+            return
+        if not isinstance(size, int) or size <= 0:
+            self.reason = "Source chunk size is missing or invalid"
             return
         expected = [[i, min(i + size, n)] for i in range(0, n, size)]
         if meta.get("chunks") != expected:

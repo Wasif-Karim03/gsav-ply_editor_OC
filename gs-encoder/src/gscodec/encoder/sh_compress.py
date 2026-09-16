@@ -60,6 +60,8 @@ def build_scalar_codebook(
     all_values: NDArray[np.float32],
     n_levels: int = SH_CODEBOOK_SIZE,
     alpha: float = 0.5,
+    *,
+    value_counts: NDArray[np.int64] | None = None,
 ) -> NDArray[np.float32]:
     """Build an optimal scalar codebook via DP on a weighted histogram.
 
@@ -80,6 +82,14 @@ def build_scalar_codebook(
     Returns:
         [n_levels] float32 sorted codebook.
     """
+    if value_counts is not None:
+        from gscodec.encoder.sh_exact import weighted_histogram
+
+        constant, histogram = weighted_histogram(all_values, value_counts, n_levels, alpha)
+        if constant is not None:
+            return constant
+        return _codebook_from_hist(*histogram, n_levels)
+
     sorted_data = np.sort(all_values.ravel().astype(np.float64))
     N = len(sorted_data)
 
@@ -117,6 +127,11 @@ def build_scalar_codebook(
 
     # Sub-linear density weighting
     weights = np.where(counts > 0, np.power(counts, alpha), 0.0)
+    return _codebook_from_hist(centers, weights, n_levels)
+
+
+def _codebook_from_hist(centers, weights, n_levels):
+    H = len(weights)
 
     # Prefix sums for O(1) range cost queries
     prefW = np.zeros(H + 1, dtype=np.float64)
@@ -140,7 +155,7 @@ def build_scalar_codebook(
             return (centers[a] + centers[b]) * 0.5
         return (prefWX[b + 1] - prefWX[a]) / w
 
-    non_empty = int(np.sum(counts > 0))
+    non_empty = int(np.sum(weights > 0))
     effective_k = min(n_levels, non_empty)
 
     # DP: dp[m][j] = min weighted SSE of quantizing bins 0..j into m centroids
@@ -353,6 +368,8 @@ def encode_sh_global(
     device: str = "cpu",
     presence: list[NDArray[np.bool_]] | None = None,
     reuse_inactive: bool = True,
+    prefer_exact: bool = False,
+    progress=None,
 ) -> SHChunkData:
     """Full SH compression pipeline across all frames globally.
 
@@ -398,7 +415,10 @@ def encode_sh_global(
             if arr.ndim == 2:
                 arr = arr.reshape(arr.shape[0], -1, 3)
             arr = arr[:, :coeffs, :]  # truncate to target band
-            flat_frames.append(arr.reshape(arr.shape[0], -1))
+            # Keep strided PLY SH views until each exact-palette frame is read.
+            # Flattening all transposed views here would copy the entire sequence.
+            flat_frames.append(arr if prefer_exact and presence is not None
+                               else arr.reshape(arr.shape[0], -1))
 
     n_chunks = len(all_frames_shN)
     chunk_sizes = [len(chunk) for chunk in all_frames_shN]
@@ -407,7 +427,39 @@ def encode_sh_global(
     if presence is not None:
         if len(presence) != len(flat_frames) or sum(actual_frame_counts) != len(flat_frames):
             raise ValueError("Mask-aware SH encoding requires every frame and its presence mask")
-        active_vectors = [f[m] for f, m in zip(flat_frames, presence, strict=True)]
+        if prefer_exact:
+            from gscodec.encoder.sh_exact import exact_palette
+
+            active_count = sum(int(mask.sum()) for mask in presence)
+            limit = min(max_centroids, max(64, active_count // 10), 65535)
+            exact = exact_palette(flat_frames, presence, limit, progress)
+            if exact is not None:
+                centers, labels, values, counts = exact
+                if progress is not None:
+                    progress(f"Encoding exact SH palette: {len(centers)} distinct vectors")
+                codebook = build_scalar_codebook(values, SH_CODEBOOK_SIZE, value_counts=counts)
+                quantized = quantize_to_codebook(centers, codebook)
+                if reuse_inactive:
+                    from gscodec.encoder.masks import reuse_inactive_rows
+
+                    start = 0
+                    for count in actual_frame_counts:
+                        reuse_inactive_rows(labels[start:start + count], presence[start:start + count])
+                        start += count
+                return SHChunkData(codebook=codebook, centroids=quantized, labels=labels,
+                                   n_centroids=len(quantized), sh_bands=sh_bands)
+            if torch.cuda.is_available():
+                padded_dims = max(16, 1 << (coeffs * 3 - 1).bit_length())
+                required = active_count * padded_dims * 4
+                free, _ = torch.cuda.mem_get_info()
+                if required > free * 0.75:
+                    raise ValueError(
+                        "SH vectors exceed the exact palette capacity and full clustering "
+                        f"needs at least {required / 1024**3:.1f} GiB of GPU input memory. "
+                        "This GPU cannot encode this edit at full quality in one sequence."
+                    )
+        active_vectors = [f[m].reshape(int(m.sum()), coeffs * 3)
+                          for f, m in zip(flat_frames, presence, strict=True)]
         training = np.concatenate(active_vectors, axis=0)
         if len(training) == 0:
             training = np.zeros((1, coeffs * 3), dtype=np.float32)

@@ -113,7 +113,23 @@ class GsavStream:
         atexit.unregister(self.close)
         if self._process is not None:
             if self._process.poll() is None:
-                self._process.terminate()
+                try:
+                    self._process.stdin.write(b'{"close":true}\n')
+                    self._process.stdin.flush()
+                    self._process.wait(timeout=5)
+                except (BrokenPipeError, OSError, subprocess.TimeoutExpired):
+                    # Windows venv Python can be a launcher with a child holding
+                    # the pipes. Terminating only the launcher leaves read()
+                    # blocked and closing stdout can then hang indefinitely.
+                    if os.name == "nt":
+                        subprocess.run(
+                            ["taskkill", "/PID", str(self._process.pid), "/T", "/F"],
+                            capture_output=True,
+                            timeout=10,
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                        )
+                    else:
+                        self._process.kill()
             self._process.wait(timeout=10)
             self._process.stdin.close()
             self._process.stdout.close()

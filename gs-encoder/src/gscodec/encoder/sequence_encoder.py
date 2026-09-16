@@ -157,8 +157,7 @@ class SequenceEncoder:
             output_path = output_path.with_suffix(".gsav")
 
         self._progress("Reading prepared frames")
-        frames = self._load_ply_sequence(input_path)
-        data = self.encode_frames(frames, audio_path=audio_path,
+        data = self.encode_frames(self._load_ply_sequence(input_path), audio_path=audio_path,
                                   static_data=static_data, static_encoding=static_encoding)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(data)
@@ -258,6 +257,24 @@ class SequenceEncoder:
         all_presence: list[np.ndarray] = []
         chunk_frame_counts = [end - start for start, end in chunk_boundaries]
 
+        # Preserved rows need no chunk permutation or padding. Build their SH
+        # palette from CPU input before allocating GPU chunks, retaining labels
+        # instead of a second full sequence of SH tensors.
+        sh_global_data: SHChunkData | None = None
+        if sh_bands > 0 and self.chunk_config.identity_mode == "preserve":
+            from gscodec.encoder.sh_compress import encode_sh_global
+
+            self._progress("Checking repeated SH coefficients before chunk encoding")
+            sh_global_data = encode_sh_global(
+                [[f.shN for f in frames[start:end]] for start, end in chunk_boundaries],
+                n_gaussians=n_gaussians, sh_bands=sh_bands,
+                max_centroids=self.chunk_config.sh_max_centroids,
+                chunk_frame_counts=chunk_frame_counts, device=self.device,
+                presence=[f.masks.reshape(-1).cpu().numpy() for f in frames],
+                reuse_inactive=self.chunk_config.reuse_inactive,
+                prefer_exact=True, progress=self._progress,
+            )
+
         n_workers = resolve_worker_count(self.chunk_config.parallel_chunks)
         use_parallel = (
             self.temporal_matcher is not None and n_workers > 1 and len(chunk_boundaries) > 1
@@ -318,11 +335,13 @@ class SequenceEncoder:
                     all_atlases.append(ef.atlas)
                     all_means_lo.append(ef.means_lo)
                     all_presence.append(ef.presence)
-                if sh_tensors is not None:
+                if sh_tensors is not None and sh_global_data is None:
                     all_sh_tensors.append([sh.cpu() for sh in sh_tensors])
+                # This list is owned by encode_frames (created by sanitization).
+                # Caller-owned tensors remain untouched; release processed slots.
+                frames[start:end] = [None] * (end - start)
 
         # Global SH encoding (once, across all chunks)
-        sh_global_data: SHChunkData | None = None
         if all_sh_tensors:
             self._progress("Compressing SH coefficients (this may take several minutes)")
             from gscodec.encoder.sh_compress import encode_sh_global
@@ -961,7 +980,13 @@ class SequenceEncoder:
         overhead (3000 iters → ~94 iters for 3k frames).
         """
         _RANGE_BATCH = 32
-        frames = active_frames(frames)
+        # Range reduction never reads SHN. Do not copy the largest field merely
+        # to apply presence masks to means/scales/rotation/opacity/base color.
+        frames = active_frames([
+            GSTensor(means=f.means, scales=f.scales, quats=f.quats,
+                     opacities=f.opacities, sh0=f.sh0, shN=None, masks=f.masks)
+            for f in frames
+        ])
         device = self.device
         _ycbcr_mat = torch.tensor(
             [

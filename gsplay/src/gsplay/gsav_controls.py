@@ -86,6 +86,12 @@ def export_times(
     if scope == "Snapshot at Current Time":
         return [current]
     if scope != "Custom Time Range":
+        from src.models.gsav import GsavModel
+
+        if isinstance(model, GsavModel):
+            # GSAV uses integer frame indices. A normalized-time round trip
+            # introduces drift (e.g. 49 -> 49.00000000000001 for 600 frames).
+            return list(range(model.get_total_frames()))
         return [
             domain.from_normalized(model.get_frame_time(i)) for i in range(model.get_total_frames())
         ]
@@ -139,6 +145,12 @@ def write_edited_sequence(
 
     layout = SourceLayout(model, times, fps, enabled=fast_export and output_format == "GSAV")
     writer = PlyExporter()
+    if status and output_format == "GSAV":
+        status(
+            "Source timeline eligible for fast export; verifying edits"
+            if layout.valid
+            else f"Standard export required: {layout.reason}"
+        )
     with tempfile.TemporaryDirectory(prefix="gsplay-edited-") as directory:
         for index, time in enumerate(times):
             data = model.get_frame_at_source_time(time)

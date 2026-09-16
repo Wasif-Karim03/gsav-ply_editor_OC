@@ -10,6 +10,37 @@ from src.gsplay.gsav_export_layout import SourceLayout
 from src.models.gsav import GsavModel
 
 
+@pytest.mark.parametrize("count", [1, 4, 180, 600, 10000])
+def test_original_frame_selection_preserves_exact_gsav_indices(count):
+    from src.gsplay.gsav_controls import export_times
+
+    obj = model()
+    obj.total_frames = count
+    obj.source_fps = 30
+    obj.gsav_metadata = {
+        "fps": 30,
+        "chunk_size": 30,
+        "chunks": [[i, min(i + 30, count)] for i in range(0, count, 30)],
+    }
+    times = export_times(obj, "Original Frames", 0)
+    assert times == list(range(count))
+    assert all(isinstance(t, int) for t in times)
+    assert SourceLayout(obj, times, 30).valid
+    if count == 600:
+        old_times = [obj.time_domain.from_normalized(obj.get_frame_time(i)) for i in range(count)]
+        assert old_times != times  # Reproduces the actual browser-path regression.
+
+
+def test_custom_frame_selection_is_not_silently_rounded():
+    from src.gsplay.gsav_controls import export_times
+
+    obj = model()
+    obj.source_fps = 30
+    times = export_times(obj, "Custom Time Range", 0, 0, 3, 0.5)
+    assert times == [0, 0.5, 1, 1.5, 2, 2.5, 3]
+    assert not SourceLayout(obj, times, 30).valid
+
+
 def model():
     obj = GsavModel.__new__(GsavModel)
     obj.total_frames = 4
@@ -69,7 +100,7 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
 
     from src.gsplay.config.settings import GSPlayConfig
     from src.gsplay.core.container import create_edit_manager
-    from src.gsplay.gsav_controls import write_edited_sequence
+    from src.gsplay.gsav_controls import export_times, write_edited_sequence
     from src.infrastructure.gsav import encode_gsav
 
     source = tmp_path / "source"
@@ -98,7 +129,7 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
     try:
         result = write_edited_sequence(
             loaded,
-            list(range(4)),
+            export_times(loaded, "Original Frames", 0),
             manager.apply_edits,
             output,
             fps=30,
@@ -132,7 +163,7 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
         messages = []
         write_edited_sequence(
             loaded,
-            list(range(4)),
+            export_times(loaded, "Original Frames", 0),
             translated,
             tmp_path / "fallback.gsav",
             fps=30,

@@ -62,6 +62,30 @@ def test_config_switch_clears_gsav_metadata_and_closes_ply(monkeypatch):
     previous.on_shutdown.assert_called_once()
 
 
+def test_config_switch_updates_renderer_before_closing_source(monkeypatch):
+    from src.gsplay.interaction.events import EventBus, EventType
+    from src.infrastructure.model_factory import ModelFactory
+
+    bus = EventBus()
+    component = ModelComponent(device="cpu", event_bus=bus)
+    previous, candidate = Mock(), Mock()
+    component.model = previous
+    rendered_source = [previous]
+
+    def replace_renderer(event):
+        previous.on_shutdown.assert_not_called()
+        rendered_source[0] = component.model
+
+    def close_previous():
+        assert rendered_source[0] is candidate
+
+    previous.on_shutdown.side_effect = close_previous
+    bus.subscribe(EventType.MODEL_LOADED, replace_renderer)
+    monkeypatch.setattr(ModelFactory, "create", lambda **kwargs: (candidate, None, {}))
+    component.load_from_config({"module": "load-ply", "config": {}})
+    previous.on_shutdown.assert_called_once()
+
+
 @pytest.mark.integration
 def test_zero_opacity_survives_ply_gsav_and_reload(tmp_path):
     try:

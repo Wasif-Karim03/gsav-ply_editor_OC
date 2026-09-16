@@ -1,11 +1,11 @@
 # GSAV / PLY Editor - Version 3
 
-Application release **3.0.1** adds Windows playback-transfer and folder-picker fixes
-to the guarded fast GSAV export introduced in 3.0.0.
-See the [3.0.1 fixes and measurements](docs/version-3.0.1.md).
+Application release **3.0.2** fixes full-sequence fast-path selection, reduces
+repeated SH processing, and improves scene replacement and decoder shutdown.
+See the [3.0.2 verification and measurements](docs/version-3.0.2.md).
 See [release notes and benchmark evidence](docs/version-3.md). The `pre-v3` tag
 and unchanged `main` branch preserve the previous baseline; this release is on
-`version-3`. Tags `v3.0.0` and `v3.0.1` preserve each patch level. The codec format remains GSAV v3.
+`version-3`. Tags `v3.0.0`, `v3.0.1` and `v3.0.2` preserve each patch level. The codec format remains GSAV v3.
 
 Combined GSPlay editor and gs-encoder **v3**, including the local integration,
 color/export fixes, regression tests, and September 15, 2026 audit.

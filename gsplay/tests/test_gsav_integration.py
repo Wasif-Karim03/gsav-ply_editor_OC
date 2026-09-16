@@ -225,7 +225,8 @@ def test_sh3_edited_sequence_round_trip(tmp_path):
         )
     finally:
         direct.on_shutdown()
-    assert process.poll() is not None
+    assert process.poll() == 0, "The decoder should acknowledge close and exit normally"
+    assert not Path(direct._stream._directory.name).exists()
 
     # Existing conftest installs a viser stub; use a clean real-app interpreter.
     import subprocess

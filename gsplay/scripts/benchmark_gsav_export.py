@@ -12,7 +12,7 @@ from gsmod import ColorValues
 
 from src.gsplay.config.settings import GSPlayConfig
 from src.gsplay.core.container import create_edit_manager
-from src.gsplay.gsav_controls import write_edited_sequence
+from src.gsplay.gsav_controls import export_times, write_edited_sequence
 from src.models.gsav import GsavModel
 
 
@@ -43,7 +43,7 @@ def main():
     try:
         result = write_edited_sequence(
             model,
-            list(range(model.total_frames)),
+            export_times(model, "Original Frames", 0),
             manager.apply_edits,
             args.output,
             fps=int(model.source_fps),
