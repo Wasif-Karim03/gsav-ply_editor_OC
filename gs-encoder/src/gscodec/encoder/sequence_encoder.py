@@ -137,6 +137,7 @@ class SequenceEncoder:
         output: str | Path,
         audio_path: str | Path | None = None,
         static_asset_path: str | Path | None = None,
+        geometry_source: str | Path | None = None,
     ) -> None:
         """Compress a PLY or SPZ sequence to GSAV format.
 
@@ -144,6 +145,8 @@ class SequenceEncoder:
             input_dir: Directory containing per-frame PLY or SPZ files.
             output: Output GSAV file path.
             audio_path: Optional audio file to embed (any format, transcoded to Opus).
+            geometry_source: Source GSAV for caller-verified color-only edits with
+                unchanged rows and timeline. Its geometry and audio are retained.
         """
         input_path = Path(input_dir)
         output_path = Path(output)
@@ -158,7 +161,8 @@ class SequenceEncoder:
 
         self._progress("Reading prepared frames")
         data = self.encode_frames(self._load_ply_sequence(input_path), audio_path=audio_path,
-                                  static_data=static_data, static_encoding=static_encoding)
+                                  static_data=static_data, static_encoding=static_encoding,
+                                  geometry_source=geometry_source)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(data)
         logger.info("Wrote %d bytes to %s", len(data), output_path)
@@ -166,10 +170,22 @@ class SequenceEncoder:
     def encode_frames(
         self, frames: list[GSTensor], *, audio_path: str | Path | None = None,
         static_data: bytes = b"", static_encoding: int = 0, prune: bool = True,
+        geometry_source: str | Path | None = None,
     ) -> bytes:
-        """Encode frames in memory; shared by dynamic and single-frame static tracks."""
+        """Encode frames in memory; shared by dynamic and single-frame static tracks.
+
+        geometry_source is reserved for caller-verified color-only edits. The
+        preserve identity mode alone does not prove that geometry was unchanged.
+        """
         if not frames or any(f.means.shape[0] == 0 for f in frames):
             raise ValueError("Frames must contain at least one Gaussian")
+        source_geometry = None
+        if geometry_source is not None:
+            if self.chunk_config.identity_mode != "preserve" or static_data:
+                raise ValueError("Source geometry reuse requires verified preserved rows")
+            from gscodec.encoder.source_geometry import SourceGeometry
+
+            source_geometry = SourceGeometry(geometry_source)
         if self.chunk_config.identity_mode == "preserve":
             if len({len(f.means) for f in frames}) != 1:
                 raise ValueError("Preserve mode requires equal row counts")
@@ -362,6 +378,13 @@ class SequenceEncoder:
                 reuse_inactive=self.chunk_config.reuse_inactive,
             )
 
+        if source_geometry is not None:
+            self._progress("Preserving source geometry bytes; updating color tiles only")
+            source_geometry.merge(
+                all_atlases, global_ranges, rows=n_gaussians,
+                fps=self.video_config.fps, chunk_size=chunk_size,
+            )
+
         # Encode video with GOP size = chunk_size
         logger.info(f"Encoding {len(all_atlases)} frame atlases (GOP={chunk_size})...")
         self._progress("Encoding VP9 with native xllvp9")
@@ -408,7 +431,10 @@ class SequenceEncoder:
                 )
             )
 
-        means_lo_data = self._compress_means_lo(all_means_lo)
+        means_lo_data = (
+            source_geometry.means_lo if source_geometry is not None
+            else self._compress_means_lo(all_means_lo)
+        )
 
         # Serialize SH payload if present (global centroids + per-chunk labels)
         sh_payload_data = b""
@@ -417,7 +443,9 @@ class SequenceEncoder:
 
         # Transcode audio if provided
         audio_data = b""
-        if audio_path is not None:
+        if source_geometry is not None:
+            audio_data = source_geometry.audio
+        elif audio_path is not None:
             target_duration = n_frames / self.video_config.fps
             audio_data = transcode_to_opus(Path(audio_path), target_duration)
 
@@ -440,7 +468,7 @@ class SequenceEncoder:
 
         from gscodec.common.types import HAS_MASK_FLAG, HAS_STATIC_ASSET_FLAG
 
-        flags = HAS_MASK_FLAG
+        flags = source_geometry.mask_flag if source_geometry is not None else HAS_MASK_FLAG
         if static_data:
             from gscodec.common.static_track import validate_static_track
             if static_encoding != 1:

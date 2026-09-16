@@ -197,6 +197,7 @@ def write_edited_sequence(
             device=device,
             audio=audio,
             preserve_layout=layout.valid,
+            geometry_source=str(model.path.resolve()) if layout.valid else None,
             progress=status,
         )
 

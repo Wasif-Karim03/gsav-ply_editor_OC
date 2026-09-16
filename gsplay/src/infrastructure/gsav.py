@@ -109,6 +109,7 @@ def encode_gsav(
     audio: str | None = None,
     *,
     preserve_layout: bool = False,
+    geometry_source: str | None = None,
     progress=None,
 ) -> dict:
     if not 1 <= fps <= 240:
@@ -129,6 +130,7 @@ def encode_gsav(
             device=device,
             audio=audio,
             preserve_layout=preserve_layout,
+            geometry_source=geometry_source,
             progress=progress,
         )
         validate_gsav(pending)

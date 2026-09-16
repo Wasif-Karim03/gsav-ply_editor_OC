@@ -68,7 +68,10 @@ The worker reconstructs SH coefficients through v3's SH sidecar decoder and
 passes those arrays to the viewer. Export uses the existing edit manager and PLY writer,
 detects the edited SH degree, then explicitly encodes that degree with v3.
 SH3 has 15 RGB higher-order coefficients per Gaussian. Degree is preserved;
-GSAV quantization and SH clustering mean a round trip is **not bit-exact**.
+Color quantization and SH clustering mean a round trip is **not bit-exact**.
+For verified color-only full-timeline GSAV exports, version 3.0.5 preserves
+geometry tiles/ranges and compressed position detail exactly; see
+[geometry preservation](../../docs/version-3.0.5.md).
 Unstructured identity mode supports changing Gaussian counts after filtering.
 
 GSAV export requires native xllvp9 at commit
@@ -191,8 +194,8 @@ Validation:
 Independent visual verification subsequently passed in the available OpsiClear
 PlayCanvas/WebGL2 viewer build: original, old and corrected exports were compared
 at frames 0, 15 and 29; the corrected 30-frame clip played to completion without
-JavaScript errors. Foreground screenshot RGB error dropped from 0.175–0.197
-to 0.00303–0.00332. Brightness-edited RGB and SH3 samples also rendered. Evidence
+JavaScript errors. Foreground screenshot RGB error dropped from 0.175ï¿½0.197
+to 0.00303ï¿½0.00332. Brightness-edited RGB and SH3 samples also rendered. Evidence
 is in the parent workspace outputs/gsavjs-audit-2026-09-10/visual-evidence.
-The user’s exact viewer remains unidentified; other backends were not verified.
+The userï¿½s exact viewer remains unidentified; other backends were not verified.
 Existing bad exports must be regenerated from the source.

@@ -1,6 +1,6 @@
 # GSAV / PLY Editor - Version 3
 
-Application release **3.0.4** fixes Apply so it preserves manual edits across preview and export. See [the Apply fix](docs/version-3.0.4.md). GSAV exports use compiled native xllvp9,
+Application release **3.0.5** preserves original geometry during color-only GSAV exports. See [geometry preservation and measurements](docs/version-3.0.5.md) and [the Apply fix](docs/version-3.0.4.md). GSAV exports use compiled native xllvp9,
 with no FFmpeg VP9 encoding fallback. See the
 [3.0.3 measurements and verification](docs/version-3.0.3.md) and
 [native installation guide](docs/native-xllvp9.md).

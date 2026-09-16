@@ -131,7 +131,15 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
         device=options["device"],
         progress=progress,
     )
-    encoder.compress(input_dir=source, output=destination, audio_path=options.get("audio"))
+    geometry_source = options.get("geometry_source")
+    if geometry_source and not preserve:
+        raise ValueError("Source geometry reuse requires verified preserved rows")
+    encoder.compress(
+        input_dir=source,
+        output=destination,
+        audio_path=options.get("audio"),
+        geometry_source=geometry_source,
+    )
     progress("Validating exported container")
     decoded = SequenceDecoder.from_file(destination)
     if len(decoded) != len(files) or decoded._provider.sh_bands != bands:

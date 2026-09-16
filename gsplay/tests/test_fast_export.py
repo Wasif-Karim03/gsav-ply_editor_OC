@@ -144,6 +144,8 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
                 a = loaded._raw(i)
                 b = replay._raw(i)
                 np.testing.assert_array_equal(a["presence"], b["presence"])
+                for field in ("means", "scales", "quats", "opacities"):
+                    np.testing.assert_array_equal(a[field], b[field])
                 mask = a["presence"]
                 np.testing.assert_allclose(a["means"][mask], b["means"][mask], atol=0.003)
                 expected = (a["sh0"][mask] * 0.28209479177387814 + 0.5) * 0.7
