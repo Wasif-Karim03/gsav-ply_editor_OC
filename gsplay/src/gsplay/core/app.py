@@ -781,6 +781,19 @@ class UniversalGSPlay:
         if self.playback_controller:
             self.playback_controller.stop()
 
+    def _apply_current_edits(self) -> None:
+        """Keep the current controls as the shared preview/export edit settings."""
+        if not self.model or not self.ui:
+            return
+        self._update_edit_history()
+        self.render_component.rerender()
+        logger.info(
+            "Applied current edits to sequence: brightness=%.3f, contrast=%.3f, gamma=%.3f",
+            self.config.color_values.brightness,
+            self.config.color_values.contrast,
+            self.config.color_values.gamma,
+        )
+
     def _apply_color_adjustment(self) -> None:
         """Apply selected color adjustment from unified dropdown.
 
@@ -843,6 +856,7 @@ class UniversalGSPlay:
 
             # Update config
             self.config.color_values = color_values
+            self._update_edit_history()
 
             # Trigger rerender
             if self.viewer:
@@ -2544,7 +2558,9 @@ class UniversalGSPlay:
             self._initialize_export_path(force=True)
             if hasattr(self, "_scene_status"):
                 label = (display_name or Path(path).name).replace("`", "")
-                self._scene_status.content = f"**Loaded:** `{label}` — {self.model.get_total_frames()} frames"
+                self._scene_status.content = (
+                    f"**Loaded:** `{label}` — {self.model.get_total_frames()} frames"
+                )
 
             logger.info(f"Successfully loaded data from: {path}")
             return True

@@ -393,11 +393,17 @@ class UISetup:
 
         viewer = self._viewer
 
-        # Register "Apply" button callback for unified color adjustment
+        # Manual Apply must never run an automatic correction or replace sliders.
         if self.ui.apply_adjustment_button:
 
             @self.ui.apply_adjustment_button.on_click
             def on_apply_adjustment(_) -> None:
+                viewer._apply_current_edits()
+
+        if self.ui.apply_preset_button:
+
+            @self.ui.apply_preset_button.on_click
+            def on_apply_preset(_) -> None:
                 viewer._apply_color_adjustment()
 
         logger.debug("Color adjustment callback registered")

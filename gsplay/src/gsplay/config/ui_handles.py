@@ -90,6 +90,7 @@ class UIHandles:
     # Unified color adjustment controls (gsmod 0.1.4 auto-correction + presets + advanced)
     color_adjustment_dropdown: viser.GuiDropdownHandle | None = None
     apply_adjustment_button: viser.GuiButtonHandle | None = None
+    apply_preset_button: viser.GuiButtonHandle | None = None
 
     # Scene transformation controls
     translation_x_slider: viser.GuiSliderHandle | None = None

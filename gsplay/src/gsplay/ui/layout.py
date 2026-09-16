@@ -1248,7 +1248,12 @@ def create_color_controls(server: viser.ViserServer, config: GSPlayConfig) -> di
         hint="<1=fade, 1=normal, >1=boost",
     )
 
-    # Unified color adjustment dropdown (gsmod 0.1.4 auto-correction + presets + advanced)
+    controls["apply_button"] = server.gui.add_button(
+        "Apply",
+        hint="Keep current edits for all frames, preview and export",
+    )
+
+    # Presets explicitly replace color controls; Apply keeps the current values.
     from src.gsplay.core.handlers.color_presets import get_dropdown_options
 
     controls["color_adjustment"] = server.gui.add_dropdown(
@@ -1257,9 +1262,9 @@ def create_color_controls(server: viser.ViserServer, config: GSPlayConfig) -> di
         initial_value="Auto Enhance",
         hint="Auto-correction (gsmod 0.1.4), style presets, or histogram learning",
     )
-    controls["apply_button"] = server.gui.add_button(
-        "Apply",
-        hint="Apply selected color adjustment",
+    controls["apply_preset_button"] = server.gui.add_button(
+        "Apply Preset",
+        hint="Replace color sliders with the selected preset or automatic correction",
     )
 
     controls["reset_button"] = server.gui.add_button("Reset")
@@ -1756,6 +1761,7 @@ def setup_ui_layout(
         # Unified color adjustment controls (gsmod 0.1.4)
         color_adjustment_dropdown=color_controls["color_adjustment"],
         apply_adjustment_button=color_controls["apply_button"],
+        apply_preset_button=color_controls["apply_preset_button"],
         # Color adjustments - advanced (from color_advanced_controls dict)
         vibrance_slider=color_advanced_controls["vibrance"],
         hue_shift_slider=color_advanced_controls["hue_shift"],
