@@ -70,6 +70,11 @@ or run a separate checkout of v3.0.8. No GSAV format migration is required.
 - Root `npm run check` passes. Root `npm test`: 49 passed, 78 failed because it
   also discovers unrelated archived JavaScript audit fixtures under `outputs/`.
   This is not a passing workspace-wide Node test run.
+- Separate live viewer: loaded the saved scene, applied Motion-aware Keep through
+  the UI, observed the shared-mask status and rendered frame 154. Visual inspection
+  still shows the raised part cut at this boundary; this release is not evidence
+  that the dancer's entire hand has been recovered. The conservative fallback
+  limitation is visible in practice, not only theoretical.
 
 Benchmark source: `python -m src.gsplay.motion_crop.benchmark`; historical report
 schema called its default-release gate `ready_for_editor`. The current schema
