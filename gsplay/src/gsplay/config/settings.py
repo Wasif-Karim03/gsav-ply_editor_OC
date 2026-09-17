@@ -165,6 +165,7 @@ class GSPlayConfig:
     filter_values: FilterValues = field(default_factory=FilterValues)
     # Session-only analysis: masks must be rebuilt when loading a saved config.
     crossing_policy: str = "Show only inside"
+    crossing_method: str = "Chunk-based"
     crossing_plan: object | None = field(default=None, repr=False, compare=False)
 
     # Opacity multiplier (not in gsmod ColorValues)

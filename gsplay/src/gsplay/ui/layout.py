@@ -734,18 +734,27 @@ def create_volume_filter_controls(server: viser.ViserServer, config: GSPlayConfi
     controls = {}
     from src.gsplay.crossing_crop import POLICIES
 
+    controls["crossing_method"] = server.gui.add_dropdown(
+        "Crossing method",
+        ("Chunk-based", "Motion-aware (preview)"),
+        initial_value=config.crossing_method,
+        hint="Motion-aware estimates tracks across chunks and caches them. First analysis takes longer; later boundary edits reuse the cache.",
+    )
+
     controls["crossing_policy"] = server.gui.add_dropdown(
-        "Crossing rows (per chunk)",
+        "Crossing behavior",
         POLICIES,
         initial_value=config.crossing_policy,
         hint="Keep or remove rows that cross the spatial boundary within each encoded GSAV chunk.",
     )
     server.gui.add_markdown(
-        "**GSAV only · per encoded chunk.** Always-inside rows stay; always-outside rows "
+        "**GSAV only.** Chunk-based decisions apply per encoded chunk. Always-inside rows stay; always-outside rows "
         "go. Keep/Remove applies to crossing rows while they exist. "
         "Rows are not tracked objects; decisions may change at chunk boundaries. "
         "Opacity/scale limits still apply. Export with PLY or GSAV. "
         "Analysis is kept for this session; reanalyze after changing the boundary."
+        " Motion-aware is experimental: uncertain/short tracks use ordinary cropping. "
+        "It does not guarantee whole-object identity or recover occluded parts."
     )
     controls["crossing_apply"] = server.gui.add_button("Analyze & Apply")
     controls["crossing_status"] = server.gui.add_markdown(
@@ -1815,6 +1824,7 @@ def setup_ui_layout(
         # Volume filtering (from dict) - basic
         min_opacity_slider=filter_controls["min_opacity"],
         crossing_policy=filter_controls["crossing_policy"],
+        crossing_method=filter_controls["crossing_method"],
         crossing_apply=filter_controls["crossing_apply"],
         crossing_status=filter_controls["crossing_status"],
         max_opacity_slider=filter_controls["max_opacity"],

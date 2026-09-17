@@ -47,6 +47,11 @@ def test_plan_requires_same_source_boundary_and_policy(tmp_path):
     config.crossing_plan = plan
     assert active_plan(model, config, required=True) is plan
     np.testing.assert_array_equal(plan.mask(0), mask)
+    config.crossing_method = "Motion-aware (preview)"
+    assert active_plan(model, config) is None
+    with pytest.raises(ValueError, match="Analyze & Apply"):
+        active_plan(model, config, required=True)
+    config.crossing_method = "Chunk-based"
     config.filter_values = replace(config.filter_values, sphere_radius=2)
     assert active_plan(model, config) is None
     with pytest.raises(ValueError, match="Analyze & Apply"):
@@ -89,13 +94,14 @@ def test_fixed_mask_preserves_fields_and_capture(device):
 
 
 @pytest.mark.integration
-def test_real_analyze_preview_and_exports(tmp_path):
+@pytest.mark.parametrize("method", ["Chunk-based", "Motion-aware (preview)"])
+def test_real_analyze_preview_and_exports(tmp_path, method):
     import gsply
     from gsmod import FilterValues
 
     from src.gsplay.config.settings import GSPlayConfig
     from src.gsplay.core.container import create_edit_manager
-    from src.gsplay.crossing_crop import analyze
+    from src.gsplay.crossing_crop import analyze, analyze_motion
     from src.gsplay.gsav_controls import write_edited_sequence
     from src.gsplay.gsav_visibility import create_export_manager
     from src.infrastructure.gsav import encode_gsav
@@ -125,9 +131,16 @@ def test_real_analyze_preview_and_exports(tmp_path):
         config = GSPlayConfig()
         config.edits_active = True
         config.filter_values = FilterValues(sphere_radius=1)
+        config.crossing_method = method
+        cache_dir = tmp_path / "motion-cache"
+        cache_dir.mkdir()
         for policy in POLICIES[1:]:
             config.crossing_policy = policy
-            plan = analyze(model, config.filter_values, policy, "cpu")
+            plan = (
+                analyze_motion(model, config.filter_values, policy, cache_dir, lambda _: None)
+                if method == "Motion-aware (preview)"
+                else analyze(model, config.filter_values, policy, "cpu")
+            )
             config.crossing_plan = plan
             preview = create_edit_manager(config, "cpu")
             manager, visibility = create_export_manager(config, "cpu", model, range(4), 30, "GSAV")

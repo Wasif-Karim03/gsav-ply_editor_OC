@@ -83,6 +83,19 @@ def match(previous, current, velocity, settings):
     rows = np.flatnonzero(forward >= 0)
     mutual = reverse[forward[rows]] == rows
     links[forward[rows[mutual]]] = rows[mutual]
+    from src.gsplay.motion_crop.structure import appearance_distinctive, structural_links
+
+    structural = structural_links(previous, current, settings)
+    established = structural >= 0
+    distinctive_a = appearance_distinctive(previous, settings)
+    distinctive_b = appearance_distinctive(current, settings)
+    fallback = links >= 0
+    fallback[fallback] &= distinctive_a[links[fallback]] & distinctive_b[fallback]
+    links[~fallback] = -1
+    # Structural matches take priority; do not give one prior sample two identities.
+    used = structural[established]
+    links[np.isin(links, used)] = -1
+    links[established] = structural[established]
     return links
 
 

@@ -23,6 +23,8 @@ def synthetic_cases():
         "fast_jump",
         "indistinguishable_duplicates",
         "dense_similar_appearance",
+        "dense_rotation",
+        "dense_independent_groups",
     ):
         frames = []
         for t in range(24):
@@ -38,11 +40,23 @@ def synthetic_cases():
                 positions[64:] = positions[:64]
                 appearance[64:] = appearance[:64]
                 sizes[64:] = sizes[:64]
-            if name == "dense_similar_appearance":
+            if name.startswith("dense_"):
                 positions = base * 0.03
                 positions[:, 0] += t * 0.025
                 appearance[:] = 0.5
                 sizes[:] = -3
+            if name == "dense_rotation":
+                angle = t * 0.03
+                rotation = np.array(
+                    [
+                        [np.cos(angle), -np.sin(angle), 0],
+                        [np.sin(angle), np.cos(angle), 0],
+                        [0, 0, 1],
+                    ]
+                )
+                positions = (base * 0.03) @ rotation.T
+            if name == "dense_independent_groups":
+                positions[64:, 0] += 1 - t * 0.04
             ids = np.arange(128)
             if name == "births_and_occlusion" and 8 <= t <= 13:
                 ids = ids[32:]
@@ -86,7 +100,15 @@ def quality_gate(results):
     guarantees. Real-scene visual review is separately required even on a pass.
     """
     failures = [r["case"] for r in results if r["wrong_links"] > 0]
-    easy = {"static_shuffled", "translation_shuffled", "crossing_groups", "births_and_occlusion"}
+    easy = {
+        "static_shuffled",
+        "translation_shuffled",
+        "crossing_groups",
+        "births_and_occlusion",
+        "dense_similar_appearance",
+        "dense_rotation",
+        "dense_independent_groups",
+    }
     failures += [
         r["case"] for r in results if r["case"] in easy and r["correct_link_recall"] < 0.95
     ]
@@ -94,7 +116,7 @@ def quality_gate(results):
         "synthetic_pass": not failures,
         "failed_cases": sorted(set(failures)),
         "real_scene_visual_review": "not completed",
-        "ready_for_editor": False,
+        "ready_for_default": False,
     }
 
 
@@ -108,7 +130,11 @@ def main():
     args = parser.parse_args()
     if args.report.exists():
         raise ValueError("Choose a new report filename")
-    report = {"synthetic": synthetic_report(), "editor_enabled": False}
+    report = {
+        "synthetic": synthetic_report(),
+        "default_editor_enabled": False,
+        "experimental_editor_available": True,
+    }
     report["quality_gate"] = quality_gate(report["synthetic"])
     if args.source:
         from gsmod import FilterValues

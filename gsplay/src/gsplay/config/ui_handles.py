@@ -47,6 +47,7 @@ class UIHandles:
     data_path_input: viser.GuiTextHandle | None = None
     load_data_button: viser.GuiButtonHandle | None = None
     crossing_policy: viser.GuiDropdownHandle | None = None
+    crossing_method: viser.GuiDropdownHandle | None = None
     crossing_apply: viser.GuiButtonHandle | None = None
     crossing_status: Any | None = None
 

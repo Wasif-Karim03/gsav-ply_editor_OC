@@ -13,8 +13,7 @@ from src.gsplay.motion_crop.tracking import Features, MatchSettings, Tracker
 def test_synthetic_links_reject_ambiguity_and_handle_permutations():
     results = {item["case"]: item for item in synthetic_report()}
     for name, result in results.items():
-        if name != "dense_similar_appearance":
-            assert result["wrong_links"] == 0, name
+        assert result["wrong_links"] == 0, name
     for name in (
         "static_shuffled",
         "translation_shuffled",
@@ -23,12 +22,13 @@ def test_synthetic_links_reject_ambiguity_and_handle_permutations():
     ):
         assert results[name]["correct_link_recall"] > 0.95
     assert results["indistinguishable_duplicates"]["accepted_links"] == 0
+    assert quality_gate(list(results.values()))["synthetic_pass"]
 
 
 def test_quality_gate_rejects_false_links_and_requires_real_review():
     assert not quality_gate([{"case": "hard", "wrong_links": 1}])["synthetic_pass"]
     gate = quality_gate([{"case": "hard", "wrong_links": 0}])
-    assert gate["synthetic_pass"] and not gate["ready_for_editor"]
+    assert gate["synthetic_pass"] and not gate["ready_for_default"]
 
 
 def test_empty_frames_break_tracks_and_bad_features_rejected():

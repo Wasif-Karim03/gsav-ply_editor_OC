@@ -1,0 +1,125 @@
+{
+  "synthetic": [
+    {
+      "case": "static_shuffled",
+      "accepted_links": 2944,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.03665730000648182
+    },
+    {
+      "case": "translation_shuffled",
+      "accepted_links": 2944,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.033586499994271435
+    },
+    {
+      "case": "crossing_groups",
+      "accepted_links": 2944,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.03356530000746716
+    },
+    {
+      "case": "births_and_occlusion",
+      "accepted_links": 2720,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.03134830000635702
+    },
+    {
+      "case": "fast_jump",
+      "accepted_links": 2816,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 0.9565217391304348,
+      "seconds": 0.033517500007292256
+    },
+    {
+      "case": "indistinguishable_duplicates",
+      "accepted_links": 0,
+      "wrong_links": 0,
+      "precision": null,
+      "correct_link_recall": 0.0,
+      "seconds": 0.027130999995279126
+    },
+    {
+      "case": "dense_similar_appearance",
+      "accepted_links": 2944,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.038477200010675006
+    },
+    {
+      "case": "dense_rotation",
+      "accepted_links": 2944,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 1.0,
+      "seconds": 0.036177599991788156
+    },
+    {
+      "case": "dense_independent_groups",
+      "accepted_links": 2868,
+      "wrong_links": 0,
+      "precision": 1.0,
+      "correct_link_recall": 0.9741847826086957,
+      "seconds": 0.03666559999692254
+    }
+  ],
+  "editor_enabled": false,
+  "quality_gate": {
+    "synthetic_pass": true,
+    "failed_cases": [],
+    "real_scene_visual_review": "not completed",
+    "ready_for_editor": false
+  },
+  "cache_build_seconds": 391.011977400005,
+  "cache_bytes": 464072477,
+  "frames": 180,
+  "crop_evaluations": [
+    {
+      "seconds": 4.633694399992237,
+      "estimated_track_sample_fraction": 0.8228177142889651,
+      "median_track_frames": 1.0,
+      "full_timeline_tracks": 34615,
+      "track_count": 2737981,
+      "samples": 14062320,
+      "quality_validated": false,
+      "radius": 1.7,
+      "policy": "keep",
+      "visible_samples": 8683654
+    },
+    {
+      "seconds": 4.753484499990009,
+      "estimated_track_sample_fraction": 0.8228177142889651,
+      "median_track_frames": 1.0,
+      "full_timeline_tracks": 34615,
+      "track_count": 2737981,
+      "samples": 14062320,
+      "quality_validated": false,
+      "radius": 1.7,
+      "policy": "remove",
+      "visible_samples": 8523496
+    },
+    {
+      "seconds": 4.7043479999993,
+      "estimated_track_sample_fraction": 0.8228177142889651,
+      "median_track_frames": 1.0,
+      "full_timeline_tracks": 34615,
+      "track_count": 2737981,
+      "samples": 14062320,
+      "quality_validated": false,
+      "radius": 1.615,
+      "policy": "keep",
+      "visible_samples": 7955664
+    }
+  ],
+  "mean_accepted_link_fraction": 0.8097955005779381
+}

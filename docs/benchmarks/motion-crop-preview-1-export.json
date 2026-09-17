@@ -1,0 +1,16 @@
+{
+  "frames": 180,
+  "all_visible_fields_exact": true,
+  "export_seconds": 42.085224900001776,
+  "source_bytes": 40651825,
+  "export_bytes": 29616041,
+  "crop_statistics": {
+    "seconds": 4.705502900003921,
+    "estimated_track_sample_fraction": 0.8228177142889651,
+    "median_track_frames": 1.0,
+    "full_timeline_tracks": 34615,
+    "track_count": 2737981,
+    "samples": 14062320,
+    "quality_validated": false
+  }
+}

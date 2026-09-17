@@ -12,7 +12,7 @@ import numpy as np
 from src.gsplay.motion_crop.tracking import Features, MatchSettings, Tracker
 
 
-VERSION = 1
+VERSION = 3
 FIELDS = {
     "means": (3, "float32"),
     "scales": (3, "float32"),

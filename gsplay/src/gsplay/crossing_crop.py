@@ -39,6 +39,8 @@ class CrossingPlan:
     policy: str
     rows: int
     masks: tuple
+    method: str = "Chunk-based"
+    summary: str = "preview and export use the analyzed chunk masks."
 
     def mask(self, frame):
         return np.unpackbits(self.masks[frame], count=self.rows).astype(bool)
@@ -48,6 +50,7 @@ class CrossingPlan:
             str(Path(getattr(model, "path", "")).resolve()) == self.source
             and filter_key(config.filter_values) == self.signature
             and config.crossing_policy == self.policy
+            and getattr(config, "crossing_method", "Chunk-based") == self.method
             and model.get_total_frames() == len(self.masks)
         )
 
@@ -142,3 +145,46 @@ def analyze(model, values, policy, device, progress=lambda message: None):
     finally:
         decoder.on_shutdown()
     return CrossingPlan(str(model.path.resolve()), filter_key(values), policy, count, tuple(masks))
+
+
+def analyze_motion(model, values, policy, directory, progress):
+    """Opt-in estimated tracks; ambiguous fragments fall back to ordinary crop."""
+    from src.gsplay.motion_crop.cache import VERSION, MotionCache, build, fingerprint
+    from src.models.gsav import GsavModel
+
+    if not isinstance(model, GsavModel):
+        raise ValueError("Motion-aware crop requires a GSAV source")
+    if policy not in POLICIES[1:] or values.invert:
+        raise ValueError("Choose Keep/Remove crossing rows with non-inverted filtering")
+    spatial = replace(values, min_opacity=0, max_opacity=1, min_scale=0, max_scale=float("inf"))
+    if spatial.is_neutral():
+        raise ValueError("Choose and position a spatial boundary first")
+    progress("Checking motion cache…")
+    key = fingerprint(model.path)
+    root = Path(directory)
+    destination = root / f"{key}-v{VERSION}"
+    if not destination.exists():
+        # Failed builds stay separate and are never reused as complete caches.
+        import tempfile
+
+        staging = Path(tempfile.mkdtemp(prefix="building-", dir=root)) / "cache"
+        build(model.path, staging, progress=progress)
+        staging.rename(destination)
+    progress("Evaluating crop using cached motion…")
+    cache = MotionCache(destination, model.path)
+    try:
+        masks, report = cache.evaluate(values, "keep" if policy == POLICIES[1] else "remove")
+        fraction = report["estimated_track_sample_fraction"]
+        return CrossingPlan(
+            str(model.path.resolve()),
+            filter_key(values),
+            policy,
+            cache.meta["rows"],
+            tuple(masks),
+            "Motion-aware (preview)",
+            f"Motion masks applied. {fraction:.0%} of samples use estimated tracks; "
+            f"{1 - fraction:.0%} use ordinary cropping. Coverage is not tracking accuracy. "
+            "Preview and export use the same masks.",
+        )
+    finally:
+        cache.close()
