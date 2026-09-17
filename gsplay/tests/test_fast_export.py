@@ -94,7 +94,7 @@ def test_missing_metadata_masks_and_disable_fall_back(monkeypatch):
 
 
 @pytest.mark.integration
-def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
+def test_real_gsav_fast_export_and_standard_fallback(tmp_path, monkeypatch):
     import gsply
     from gsmod import ColorValues
 
@@ -187,9 +187,46 @@ def test_real_gsav_fast_export_and_standard_fallback(tmp_path):
                 active = actual["presence"]
                 expected = preview.means[preview.opacities.reshape(-1) > 0].numpy()
                 np.testing.assert_array_equal(actual["means"][active], expected)
-                assert len(actual["means"]) == len(loaded._raw(i)["means"])
+                assert len(actual["means"]) <= len(loaded._raw(i)["means"])
         finally:
             filtered.on_shutdown()
+
+        # Crop-only transport must never serialize edited PLY frames.
+        from src.infrastructure.exporters.ply_exporter import PlyExporter
+
+        config.color_values = ColorValues()
+        crop_manager, crop_visibility = create_export_manager(
+            config, "cpu", loaded, range(4), 30, "GSAV"
+        )
+        assert crop_visibility.crop_only
+
+        def forbidden_ply(*args, **kwargs):
+            raise AssertionError("Crop-only export must skip PLY transport")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(PlyExporter, "export_frame", forbidden_ply)
+            write_edited_sequence(
+                loaded,
+                list(range(4)),
+                crop_manager.apply_edits,
+                tmp_path / "crop.gsav",
+                fps=30,
+                device="cpu",
+                visibility=crop_visibility,
+            )
+        crop = GsavModel(tmp_path / "crop.gsav", device="cpu")
+        try:
+            for i in range(4):
+                crop_manager.apply_edits(loaded.get_frame_at_source_time(i).to_gstensor("cpu"))
+                original = loaded._raw(i)
+                expected_mask = original["presence"] & crop_visibility.mask
+                actual = crop._raw(i)
+                for field in ("means", "scales", "quats", "opacities", "sh0", "shN"):
+                    np.testing.assert_array_equal(
+                        original[field][expected_mask], actual[field][actual["presence"]]
+                    )
+        finally:
+            crop.on_shutdown()
 
         # A geometry edit is detected even when performed by an arbitrary callback.
         def translated(data):

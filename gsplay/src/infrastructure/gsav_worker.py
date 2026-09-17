@@ -17,6 +17,40 @@ def stored_sh_degree(header: dict) -> int:
     return bands
 
 
+def export_crop(source, destination, options, layout, progress):
+    """Validate staged masks, then copy retained encoded source samples."""
+    import numpy as np
+    from gscodec.decoder import SequenceDecoder
+    from gscodec.encoder.crop_source import crop_source
+    from gscodec.encoder.source_geometry import SourceGeometry
+
+    if not options.get("preserve_layout") or not options.get("geometry_source"):
+        raise ValueError("Crop-only export requires verified source layout")
+    original = SourceGeometry(options["geometry_source"])
+    h = original.header
+    if (
+        layout.get("version") != 1
+        or layout.get("frames") != h["n_frames"]
+        or layout.get("rows") != h["n_gaussians"]
+        or layout.get("chunk_size") != h["chunk_size"]
+        or options["fps"] != h["fps"]
+        or not layout.get("visibility")
+    ):
+        raise ValueError("Crop manifest does not match source")
+    masks = []
+    for index in range(h["n_frames"]):
+        mask = np.load(source / f"visibility_{index:06d}.npy", allow_pickle=False)
+        if mask.dtype != np.bool_ or mask.shape != (h["n_gaussians"],):
+            raise ValueError("Invalid crop visibility")
+        masks.append(mask)
+    destination.write_bytes(crop_source(options["geometry_source"], masks, progress))
+    decoded = SequenceDecoder.from_file(destination)
+    bands = stored_sh_degree(h)
+    if len(decoded) != h["n_frames"] or decoded._provider.sh_bands != bands:
+        raise ValueError("Cropped container frame count or SH degree mismatch")
+    return {"frames": len(decoded), "fps": h["fps"], "sh_bands": bands}
+
+
 def convert(operation: str, source: Path, destination: Path, options: dict) -> dict:
     import gsply
     from gscodec.decoder import SequenceDecoder
@@ -69,15 +103,6 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
 
     require_native_encoder()
 
-    files = sorted(source.glob("*.ply"))
-    if not files:
-        raise ValueError("No edited PLY frames to encode.")
-    from gscodec.encoder.sh_compress import compute_sh_bands
-
-    bands = compute_sh_bands(gsply.plyread(files[0]).shN)
-    if any(compute_sh_bands(gsply.plyread(path).shN) != bands for path in files[1:]):
-        raise ValueError("All exported frames must have the same SH degree.")
-
     def progress(message):
         if options.get("progress_path"):
             # Windows readers can prevent atomic replacement. A progress update
@@ -88,6 +113,21 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
                 )
             except OSError:
                 pass
+
+    manifest = source / "source-layout.json"
+    if manifest.exists():
+        layout = json.loads(manifest.read_text(encoding="utf-8"))
+        if layout.get("crop_only"):
+            return export_crop(source, destination, options, layout, progress)
+
+    files = sorted(source.glob("*.ply"))
+    if not files:
+        raise ValueError("No edited PLY frames to encode.")
+    from gscodec.encoder.sh_compress import compute_sh_bands
+
+    bands = compute_sh_bands(gsply.plyread(files[0]).shN)
+    if any(compute_sh_bands(gsply.plyread(path).shN) != bands for path in files[1:]):
+        raise ValueError("All exported frames must have the same SH degree.")
 
     preserve = bool(options.get("preserve_layout", False))
     chunk_size = 30
@@ -152,6 +192,7 @@ def convert(operation: str, source: Path, destination: Path, options: dict) -> d
         audio_path=options.get("audio"),
         geometry_source=geometry_source,
         visibility=visibility,
+        compact_visibility=visibility is not None,
     )
     progress("Validating exported container")
     decoded = SequenceDecoder.from_file(destination)

@@ -15,6 +15,7 @@ class ExportVisibility(VolumeFilterService):
 
     def __init__(self):
         self.mask = None
+        self.crop_only = False
 
     def _capture(self, data, config):
         def numpy(value):
@@ -75,5 +76,6 @@ def create_export_manager(config, device, model, times, fps, output_format):
         and SourceLayout(model, times, fps).valid
     ):
         visibility = ExportVisibility()
+        visibility.crop_only = config.color_values.is_neutral()
         providers.volume_filter = visibility
     return create_edit_manager(config, device, providers), visibility

@@ -104,6 +104,10 @@ def test_audio_is_copied_without_reencoding(tmp_path, mock_gstensor, monkeypatch
     monkeypatch.setattr(sequence_encoder, "transcode_to_opus", forbidden)
     result = encoder.encode_frames(frames, geometry_source=source, audio_path=wav)
     assert GSAVFileProvider(result).get_audio() == GSAVFileProvider(source).get_audio()
+    from gscodec.encoder.crop_source import crop_source
+
+    cropped = crop_source(source, [np.arange(16) < 4 for _ in frames])
+    assert GSAVFileProvider(cropped).get_audio() == GSAVFileProvider(source).get_audio()
 
 
 def test_visibility_retains_geometry_and_never_requires_matching(tmp_path, mock_gstensor):

@@ -140,6 +140,7 @@ class SequenceEncoder:
         geometry_source: str | Path | None = None,
         *,
         visibility: list[np.ndarray] | None = None,
+        compact_visibility: bool = False,
     ) -> None:
         """Compress a PLY or SPZ sequence to GSAV format.
 
@@ -151,6 +152,8 @@ class SequenceEncoder:
                 unchanged rows and timeline. Its geometry and audio are retained.
             visibility: Optional per-frame masks for filtering original rows.
                 Requires geometry_source; does not compact or reorder the rows.
+            compact_visibility: Remove slots never visible within each chunk,
+                preserving all visible encoded samples and retained row order.
         """
         input_path = Path(input_dir)
         output_path = Path(output)
@@ -166,7 +169,8 @@ class SequenceEncoder:
         self._progress("Reading prepared frames")
         data = self.encode_frames(self._load_ply_sequence(input_path), audio_path=audio_path,
                                   static_data=static_data, static_encoding=static_encoding,
-                                  geometry_source=geometry_source, visibility=visibility)
+                                  geometry_source=geometry_source, visibility=visibility,
+                                  compact_visibility=compact_visibility)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(data)
         logger.info("Wrote %d bytes to %s", len(data), output_path)
@@ -176,6 +180,7 @@ class SequenceEncoder:
         static_data: bytes = b"", static_encoding: int = 0, prune: bool = True,
         geometry_source: str | Path | None = None,
         visibility: list[np.ndarray] | None = None,
+        compact_visibility: bool = False,
     ) -> bytes:
         """Encode frames in memory; shared by dynamic and single-frame static tracks.
 
@@ -185,6 +190,8 @@ class SequenceEncoder:
         if not frames or any(f.means.shape[0] == 0 for f in frames):
             raise ValueError("Frames must contain at least one Gaussian")
         source_geometry = None
+        if compact_visibility and (visibility is None or geometry_source is None):
+            raise ValueError("Compaction requires source geometry and visibility")
         if visibility is not None and geometry_source is None:
             raise ValueError("Visibility overrides require verified source geometry")
         if geometry_source is not None:
@@ -393,6 +400,17 @@ class SequenceEncoder:
                 visibility=visibility,
             )
 
+        compact_lows = None
+        if compact_visibility:
+            from gscodec.encoder.compact import compact_source
+
+            self._progress("Removing source slots that are never visible within each chunk")
+            original_rows = n_gaussians
+            n_gaussians, atlas_side, compact_lows, sh_global_data = compact_source(
+                all_atlases, source_geometry.provider, visibility, sh_global_data, chunk_size
+            )
+            self._progress(f"Compacted storage: {original_rows} -> {n_gaussians} rows")
+
         # Encode video with GOP size = chunk_size
         logger.info(f"Encoding {len(all_atlases)} frame atlases (GOP={chunk_size})...")
         self._progress("Encoding VP9 with native xllvp9")
@@ -440,7 +458,8 @@ class SequenceEncoder:
             )
 
         means_lo_data = (
-            source_geometry.means_lo if source_geometry is not None
+            self._compress_means_lo(compact_lows) if compact_lows is not None
+            else source_geometry.means_lo if source_geometry is not None
             else self._compress_means_lo(all_means_lo)
         )
 

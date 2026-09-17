@@ -145,6 +145,7 @@ def write_edited_sequence(
     from src.gsplay.gsav_export_layout import SourceLayout
 
     layout = SourceLayout(model, times, fps, enabled=fast_export and output_format == "GSAV")
+    crop_only = visibility is not None and visibility.crop_only and layout.valid
     writer = PlyExporter()
     if status and output_format == "GSAV":
         status(
@@ -163,7 +164,23 @@ def write_edited_sequence(
                 # arrays during edits. Make field arrays authoritative at this boundary.
                 data._base = None
             reference = layout.before(data)
+            colors = (
+                {
+                    key: getattr(data, key).clone()
+                    for key in ("sh0", "shN")
+                    if getattr(data, key) is not None
+                }
+                if crop_only
+                else None
+            )
             edited = edit_applier(data)
+            if colors is not None:
+                import torch
+
+                if any(
+                    not torch.equal(value, getattr(edited, key)) for key, value in colors.items()
+                ):
+                    raise GsavError("Color changes detected during crop-only export; aborted.")
             presence = layout.after(index, reference, edited)
             if visibility is not None:
                 mask = visibility.mask
@@ -181,7 +198,8 @@ def write_edited_sequence(
                 )
             if presence is not None:
                 np.save(Path(directory) / f"presence_{index:06d}.npy", presence, allow_pickle=False)
-            writer.export_frame(edited, Path(directory) / f"frame_{index:06d}.ply")
+            if not crop_only:
+                writer.export_frame(edited, Path(directory) / f"frame_{index:06d}.ply")
             if progress:
                 progress(index + 1, len(times))
             if status and (index == 0 or (index + 1) % 10 == 0 or index + 1 == len(times)):
@@ -199,6 +217,7 @@ def write_edited_sequence(
                         "rows": layout.count,
                         "chunk_size": layout.chunk_size,
                         "visibility": visibility is not None,
+                        "crop_only": crop_only,
                     }
                 ),
                 encoding="utf-8",
