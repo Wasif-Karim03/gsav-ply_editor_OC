@@ -167,6 +167,10 @@
         "src/gsplay/interaction/events.py": "4c4b92266126b706b2dbb5614ecf3c2e94322305718f7a34c0cef6572e55b243",
         "src/gsplay/interaction/handlers.py": "6fca56104db1d7a1024f6039727ed93d767222f7d5498924025ead33f0fbf8f7",
         "src/gsplay/interaction/playback.py": "c41d8aca72d7e2a0b20de53c8023bc29a3b8ce7378cee3cc0b271aae4fac2b73",
+        "src/gsplay/motion_crop/__init__.py": "ce3f766049702de701a2c748cbfacd68677f97be6598ebe984c6fe5e46837e8a",
+        "src/gsplay/motion_crop/benchmark.py": "7840bcada597a6ae3448470fda01edc057307a6c63b202e02af0823e6d437c9e",
+        "src/gsplay/motion_crop/cache.py": "a679f0f25d32ea8b6093acbae9e93ab33e66082b8a195167734f8b0b470cc01f",
+        "src/gsplay/motion_crop/tracking.py": "d0866e67d7adb1ea36129931eefbaf627654378edb21f9a1ff913cbe069d4622",
         "src/gsplay/nerfview/__init__.py": "552ecb666fe2beeb150c9e6f79c7d9fcbae2cfa9b8599cd77dacdb6005c3e491",
         "src/gsplay/nerfview/_renderer.py": "52d9e568a904b079b05afe252d94fbf3c6c10cc22aa045f5b5a399a52a8d906a",
         "src/gsplay/nerfview/render_panel.py": "a4b2173e24695628f0ecd23d53f0c8b8ca92871ec296a0c29121d9254ea0f358",
@@ -280,6 +284,7 @@
         "tests/test_frame_buffer.py": "06380e2129b3f0a1c54affaaeaab56ffbcdb1c9e6fb6652fe7c7c59674cc349e",
         "tests/test_gs_bridge.py": "bc9a8172f57ac78ba49c9d6de796ad1e6255867829d736a7324f267e6ac6ab61",
         "tests/test_gsav_integration.py": "73372e47522bd40e3dd6400f43f046df52a3cb1892d76d08ad85068e26bffb68",
+        "tests/test_motion_crop.py": "d0bf2123a6b1956ac734ff1ea4291f32e3a2cb441c2c5e0a920052c87ecdcf5c",
         "tests/test_natural_sort.py": "0e588b1fbc05fd94bfca3f197cabbe60042ce40474bb9eae78673bcb8e0e3af5",
         "tests/test_pipeline_audit.py": "a2c31907677fd56bcfe4bee5d5624ceca693cb69f3d9f5b92ad9662b8e3ab635",
         "tests/test_scene_loading.py": "a127bf0a03725b54d38ef84df4a8bc3c0119dee517fd2885a29c268837185828",
@@ -423,7 +428,7 @@
     "gsplay/.claude/settings.local.json",
     "gs-encoder/.claude/settings.local.json"
   ],
-  "release": "3.0.8",
+  "release": "3.0.8-motion-prototype.1",
   "baseline_commit": "58855adc3a83fec90ba78dcc3f777d2787f7fc65",
   "native_build": {
     "xllvp9_commit": "fc0ad99972e96af08fffd62489dd1fa926323c21",

@@ -1,5 +1,10 @@
 # GSAV / PLY Editor - Version 3
 
+**Prototype branch note:** motion-aware cropping is an offline experiment only.
+Its first matcher failed the dense-scene quality gate and is not enabled in the
+editor. See [measurements, limitations and rollback](docs/motion-crop-prototype.md).
+The stable `version-3` branch and `v3.0.8` tag remain the working application.
+
 Application release **3.0.8** adds explicit chunk-based keep/remove-crossing choices in the Filter panel, with shared preview/export masks and stale-analysis checks. See [crossing controls and limitations](docs/version-3.0.8.md). Cropped exports retain the smaller-file path from [3.0.7](docs/version-3.0.7.md); crop-only exports skip PLY staging and color fitting. See [filtered export preservation](docs/version-3.0.6.md) and [the Apply fix](docs/version-3.0.4.md). GSAV exports use compiled native xllvp9,
 with no FFmpeg VP9 encoding fallback. See the
 [3.0.3 measurements and verification](docs/version-3.0.3.md) and
