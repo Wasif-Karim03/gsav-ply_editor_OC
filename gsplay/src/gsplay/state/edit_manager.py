@@ -167,6 +167,8 @@ class EditManager:
         self,
         gaussians: GSData | GSTensor,
         scene_bounds: dict[str, object] | None = None,
+        *,
+        filter_mask=None,
     ) -> GSTensor:
         """
         Apply all edits to Gaussian data using configured processing mode.
@@ -216,7 +218,11 @@ class EditManager:
             color_processor=self._color_processor,
             scene_transformer=self._scene_transformer,
             opacity_adjuster=self._opacity_adjuster,
-            volume_filter=self._volume_filter,
+            volume_filter=(
+                self._volume_filter.with_mask(filter_mask)
+                if filter_mask is not None
+                else self._volume_filter
+            ),
             gaussian_bridge=self._gs_bridge,
         )
         result = strategy.apply(context, gaussians, scene_bounds)

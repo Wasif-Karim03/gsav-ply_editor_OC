@@ -17,6 +17,11 @@ class ExportVisibility(VolumeFilterService):
         self.mask = None
         self.crop_only = False
 
+    def with_mask(self, mask):
+        from src.gsplay.processing.fixed_mask import FixedMaskFilter
+
+        return FixedMaskFilter(mask, capture=self)
+
     def _capture(self, data, config):
         def numpy(value):
             return value.detach().cpu().numpy() if torch.is_tensor(value) else value

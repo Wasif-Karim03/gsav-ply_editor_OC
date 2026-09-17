@@ -288,9 +288,11 @@ class UniversalGSPlay:
 
         if self._apply_edits_fn is None:
 
-            def apply_edits_wrapper(gaussians: GSTensor) -> GSTensor:
+            def apply_edits_wrapper(gaussians: GSTensor, *, filter_mask=None) -> GSTensor:
                 return self.edit_manager.apply_edits(
-                    gaussians, scene_bounds=self.scene_bounds_manager.get_bounds()
+                    gaussians,
+                    scene_bounds=self.scene_bounds_manager.get_bounds(),
+                    filter_mask=filter_mask,
                 )
 
             self._apply_edits_fn = apply_edits_wrapper
@@ -604,9 +606,11 @@ class UniversalGSPlay:
         logger.debug("Event handlers registered")
 
         # Create render function with edit wrapper
-        def apply_edits_wrapper(gaussians: GSTensor) -> GSTensor:
+        def apply_edits_wrapper(gaussians: GSTensor, *, filter_mask=None) -> GSTensor:
             return self.edit_manager.apply_edits(
-                gaussians, scene_bounds=self.scene_bounds_manager.get_bounds()
+                gaussians,
+                scene_bounds=self.scene_bounds_manager.get_bounds(),
+                filter_mask=filter_mask,
             )
 
         self._apply_edits_fn = apply_edits_wrapper
@@ -1340,6 +1344,9 @@ class UniversalGSPlay:
             or self.config.alpha_scaler != 1.0
             or is_filter_active(self.config.filter_values)
         )
+        from src.gsplay.crossing_controls import refresh_status
+
+        refresh_status(self)
 
     def _handle_export_ply(self) -> None:
         """Handle export based on selected scope (dispatcher).
@@ -1349,6 +1356,21 @@ class UniversalGSPlay:
         - Original Frames → _handle_export_all_keyframes()
         - Custom Time Range → _handle_export_time_range()
         """
+        if (
+            self.config.crossing_policy != "Show only inside"
+            and self.ui
+            and self.ui.export_format
+            and self.ui.export_format.value not in ("GSAV", "PLY")
+        ):
+            from src.gsplay.gsav_controls import _notify
+
+            _notify(
+                self,
+                "Choose PLY or GSAV",
+                "Crossing crop export supports PLY and GSAV formats.",
+                "red",
+            )
+            return
         if self.ui and self.ui.export_format and self.ui.export_format.value in ("GSAV", "PLY"):
             from src.gsplay.gsav_controls import export_sequence
 
@@ -2497,8 +2519,14 @@ class UniversalGSPlay:
             tensor_pro, _ = bridge.gaussian_data_to_gstensor_pro(data, self.device)
 
             # Apply edits
+            from src.gsplay.crossing_crop import active_plan
+
+            plan = active_plan(self.model, self.config, required=True)
+            frame_index = int(self.ui.time_slider.value) if self.ui and self.ui.time_slider else 0
             tensor_pro = self.edit_manager.apply_edits(
-                tensor_pro, scene_bounds=self.scene_bounds_manager.get_bounds()
+                tensor_pro,
+                scene_bounds=self.scene_bounds_manager.get_bounds(),
+                filter_mask=plan.mask(frame_index) if plan is not None else None,
             )
 
             # Convert back to GaussianData
@@ -2562,6 +2590,9 @@ class UniversalGSPlay:
                     f"**Loaded:** `{label}` — {self.model.get_total_frames()} frames"
                 )
 
+            from src.gsplay.crossing_controls import refresh_status
+
+            refresh_status(self)
             logger.info(f"Successfully loaded data from: {path}")
             return True
 

@@ -732,6 +732,25 @@ def create_volume_filter_controls(server: viser.ViserServer, config: GSPlayConfi
         Dictionary of all filter control handles
     """
     controls = {}
+    from src.gsplay.crossing_crop import POLICIES
+
+    controls["crossing_policy"] = server.gui.add_dropdown(
+        "Crossing rows (per chunk)",
+        POLICIES,
+        initial_value=config.crossing_policy,
+        hint="Keep or remove rows that cross the spatial boundary within each encoded GSAV chunk.",
+    )
+    server.gui.add_markdown(
+        "**GSAV only · per encoded chunk.** Always-inside rows stay; always-outside rows "
+        "go. Keep/Remove applies to crossing rows while they exist. "
+        "Rows are not tracked objects; decisions may change at chunk boundaries. "
+        "Opacity/scale limits still apply. Export with PLY or GSAV. "
+        "Analysis is kept for this session; reanalyze after changing the boundary."
+    )
+    controls["crossing_apply"] = server.gui.add_button("Analyze & Apply")
+    controls["crossing_status"] = server.gui.add_markdown(
+        "**Crop:** show each row only while inside."
+    )
 
     # Get filter_values from config if available
     fv = getattr(config, "filter_values", None)
@@ -1795,6 +1814,9 @@ def setup_ui_layout(
         center_button=transform_controls["center_button"],
         # Volume filtering (from dict) - basic
         min_opacity_slider=filter_controls["min_opacity"],
+        crossing_policy=filter_controls["crossing_policy"],
+        crossing_apply=filter_controls["crossing_apply"],
+        crossing_status=filter_controls["crossing_status"],
         max_opacity_slider=filter_controls["max_opacity"],
         min_scale_slider=filter_controls["min_scale"],
         max_scale_slider=filter_controls["max_scale"],

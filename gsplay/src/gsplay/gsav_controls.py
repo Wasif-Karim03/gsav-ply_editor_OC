@@ -129,6 +129,7 @@ def write_edited_sequence(
     status=None,
     fast_export: bool = True,
     visibility=None,
+    crossing_plan=None,
 ) -> dict:
     """Use the same PLY export normalization as ordinary PLY export, including SHN."""
     from src.domain.data import GaussianData
@@ -173,7 +174,11 @@ def write_edited_sequence(
                 if crop_only
                 else None
             )
-            edited = edit_applier(data)
+            edited = (
+                edit_applier(data, filter_mask=crossing_plan.mask(round(time)))
+                if crossing_plan is not None
+                else edit_applier(data)
+            )
             if colors is not None:
                 import torch
 
@@ -291,6 +296,9 @@ def export_sequence(app) -> None:
             raise GsavError("This GSAV codec requires an integer Source FPS.")
         fps = int(fps_value) if output_format == "GSAV" else 30
         app._update_edit_history()
+        from src.gsplay.crossing_crop import active_plan
+
+        crossing_plan = active_plan(model, app.config, required=True)
         manager, visibility = create_export_manager(
             deepcopy(app.config), device, model, times, fps, output_format
         )
@@ -329,7 +337,7 @@ def export_sequence(app) -> None:
             result = write_edited_sequence(
                 model,
                 times,
-                lambda data: manager.apply_edits(data, scene_bounds=bounds),
+                lambda data, **kwargs: manager.apply_edits(data, scene_bounds=bounds, **kwargs),
                 destination,
                 fps=fps,
                 device=device,
@@ -337,6 +345,7 @@ def export_sequence(app) -> None:
                 output_format=output_format,
                 status=report_status,
                 visibility=visibility,
+                crossing_plan=crossing_plan,
             )
             _notify(
                 app,

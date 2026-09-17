@@ -127,6 +127,10 @@ class UISetup:
         # Store reference for callbacks
         viewer = self._viewer
 
+        from src.gsplay.crossing_controls import bind_controls
+
+        bind_controls(viewer, self.ui)
+
         # Callback to update visualization when show checkbox changes
         # Also enables/disables the interactive gizmo (merged control)
         def on_show_filter_viz_change(_) -> None:

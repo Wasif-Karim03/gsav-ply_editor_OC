@@ -1,6 +1,6 @@
 # GSAV / PLY Editor - Version 3
 
-Application release **3.0.7** physically compacts cropped GSAV exports while preserving visible samples. Crop-only exports skip PLY staging and color fitting. See [compact crop measurements and verification](docs/version-3.0.7.md), [filtered export preservation](docs/version-3.0.6.md), and [the Apply fix](docs/version-3.0.4.md). GSAV exports use compiled native xllvp9,
+Application release **3.0.8** adds explicit chunk-based keep/remove-crossing choices in the Filter panel, with shared preview/export masks and stale-analysis checks. See [crossing controls and limitations](docs/version-3.0.8.md). Cropped exports retain the smaller-file path from [3.0.7](docs/version-3.0.7.md); crop-only exports skip PLY staging and color fitting. See [filtered export preservation](docs/version-3.0.6.md) and [the Apply fix](docs/version-3.0.4.md). GSAV exports use compiled native xllvp9,
 with no FFmpeg VP9 encoding fallback. See the
 [3.0.3 measurements and verification](docs/version-3.0.3.md) and
 [native installation guide](docs/native-xllvp9.md).

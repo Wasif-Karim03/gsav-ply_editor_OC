@@ -156,7 +156,14 @@ def create_render_function(
 
         # Apply edits
         _checkpoint_edits = time.perf_counter()
-        render_gaussians = apply_edits_fn(gaussians)
+        from src.gsplay.crossing_crop import active_plan
+
+        plan = active_plan(model, config)
+        if plan is not None:
+            frame_index = round(normalized_time * (model.get_total_frames() - 1))
+            render_gaussians = apply_edits_fn(gaussians, filter_mask=plan.mask(frame_index))
+        else:
+            render_gaussians = apply_edits_fn(gaussians)
         _t_edits = (time.perf_counter() - _checkpoint_edits) * 1000  # ms
 
         # Emit render stats instead of updating UI directly

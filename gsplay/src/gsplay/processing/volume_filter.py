@@ -56,6 +56,11 @@ def is_filter_active(fv: FilterValues) -> bool:
 class VolumeFilterService:
     """Encapsulates CPU/GPU volume filtering behaviour."""
 
+    def with_mask(self, mask):
+        from src.gsplay.processing.fixed_mask import FixedMaskFilter
+
+        return FixedMaskFilter(mask)
+
     def filter_cpu(
         self,
         data: GSData,
