@@ -3,6 +3,10 @@
 Combined GSPlay editor and gs-encoder **v3**, including the local integration,
 color/export fixes, regression tests, and September 15, 2026 audit.
 
+## Engineering focus
+
+The integration connects the editor and codec through decoded Gaussian arrays and an export bridge. The work includes color/export fixes, SH sidecar handling and regression tests. See [integration details](gsplay/docs/gsav-integration.md), the [recorded audit](gsplay/docs/audit-2026-09-15.md), and [upstream provenance](#provenance-and-licensing) for the implementation history and its limits.
+
 ## What it does
 
 - Opens GSAV as decoded Gaussian arrays directly, without converting input to PLY.
